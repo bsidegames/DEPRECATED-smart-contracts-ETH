@@ -265,7 +265,7 @@ contract MonstersData {
 
 contract MonstersBase is MonsterAccessControl, MonstersData {
 
-    /// @dev Transfer event as defined in current draft of ERC721. Emitted every time a kitten
+    /// @dev Transfer event as defined in current draft of ERC721. Emitted every time a monster
     ///  ownership is assigned, including births.
     event Transfer(address from, address to, uint256 tokenId);
 
@@ -506,7 +506,7 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
 
 }
 
-/// @title The external contract that is responsible for generating metadata for the kitties,
+/// @title The external contract that is responsible for generating metadata for the monsters,
 ///  it has one function that will return the data as bytes.
 contract ERC721Metadata {
     /// @dev Given a token Id, returns a byte array that is supposed to be converted into string.
@@ -583,8 +583,8 @@ contract MonsterOwnership is MonstersBase, ERC721 {
     
     
     /// @dev Checks if a given address currently has transferApproval for a particular monster.
-    /// @param _claimant the address we are confirming kitten is approved for.
-    /// @param _tokenId kitten id, only valid when > 0
+    /// @param _claimant the address we are confirming monster is approved for.
+    /// @param _tokenId monster id, only valid when > 0
     function _approvedFor(address _claimant, uint256 _tokenId) internal view returns (bool) {
         return monsterIndexToApproved[_tokenId] == _claimant;
     }
@@ -592,7 +592,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
     /// @dev Marks an address as being approved for transferFrom(), overwriting any previous
     ///  approval. Setting _approved to address(0) clears all transfer approval.
     ///  NOTE: _approve() does NOT send the Approval event. This is intentional because
-    ///  _approve() and transferFrom() are used together for putting Kitties on auction, and
+    ///  _approve() and transferFrom() are used together for putting monsters on auction, and
     ///  there is no value in spamming the log with Approval events in that case.
     function _approve(uint256 _tokenId, address _approved) internal {
         monsterIndexToApproved[_tokenId] = _approved;
@@ -614,7 +614,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
         // Safety check to prevent against an unexpected 0x0 default.
         require(_to != address(0));
         // Disallow transfers to this contract to prevent accidental misuse.
-        // The contract should never own any kitties (except very briefly
+        // The contract should never own any monsters (except very briefly
         // after a gen0 monster is created and before it goes on auction).
         require(_to != address(this));
         
@@ -670,7 +670,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
         // Safety check to prevent against an unexpected 0x0 default.
         require(_to != address(0));
         // Disallow transfers to this contract to prevent accidental misuse.
-        // The contract should never own any kitties (except very briefly
+        // The contract should never own any monsters (except very briefly
         // after a gen0 monster is created and before it goes on auction).
         require(_to != address(this));
         // Check for approval and valid ownership
