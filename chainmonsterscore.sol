@@ -1207,6 +1207,9 @@ contract MonsterChampionship {
         ) {
             uint maxIndex = 9;
             
+            
+            
+            
             // fail tx if player is already champion!
             // in theory players could increase their powerlevel by contesting themselves but
             // this check stops that from happening so other players have the chance to
@@ -1214,10 +1217,10 @@ contract MonsterChampionship {
             if (currChampion == msg.sender)
                 revert();
             
-           
+           require(core.monsterIndexToOwner(_tokenId) == msg.sender);
             
            // uint myPowerlevel = addressToPowerlevel[msg.sender];
-           uint myPowerlevel = _tokenId;
+           uint myPowerlevel = core.getMonsterPowerLevel(_tokenId);
            addressToPowerlevel[msg.sender] = myPowerlevel;
             
             for (uint i=0; i<=maxIndex; i++)
