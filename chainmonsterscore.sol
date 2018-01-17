@@ -1183,7 +1183,7 @@ contract MonsterChampionship {
 
     bool public isMonsterChampionship = true;
     
-    ChainMonstersCore core;
+    //ChainMonstersCore core;
     
     // list of top ten 
     address[10] topTen;
@@ -1193,6 +1193,7 @@ contract MonsterChampionship {
     uint256 public powerLevel;
     
     mapping (address => uint256) public addressToPowerlevel;
+    mapping (uint256 => address) public rankToAddress;
 
    
     
@@ -1216,66 +1217,84 @@ contract MonsterChampionship {
             // become the temporary champion!
             if (currChampion == msg.sender)
                 revert();
+                
+            
             
            require(core.monsterIndexToOwner(_tokenId) == msg.sender);
             
-           // uint myPowerlevel = addressToPowerlevel[msg.sender];
+           
            uint myPowerlevel = core.getMonsterPowerLevel(_tokenId);
-           addressToPowerlevel[msg.sender] = myPowerlevel;
+
+           
+           // checks if this transaction is useless
+           // since we can't fight against ourself!
+           require(myPowerlevel > addressToPowerlevel[msg.sender]);
+           
+           uint curIndex = 0;
+           uint myRank = 0;
             
             for (uint i=0; i<=maxIndex; i++)
             {
-                
-               
-                
-                if (addressToPowerlevel[topTen[i]] >= 0)
+                //if (addres)
+                if ( myPowerlevel > addressToPowerlevel[topTen[i]] )
                 {
+                    // you have beaten this one so increase temporary rank
+                    myRank = i;
                     
-                    if (addressToPowerlevel[topTen[maxIndex-i]] < myPowerlevel)
+                    if (myRank == maxIndex)
                     {
-                        // ToDo: shift every other contestant one place down!
-                       
-                       
-                        topTen[maxIndex-i] = msg.sender;
-                        success = true;
-                        
-                        if (i==0)
-                            currChampion = msg.sender;
-                        
-                        
-                        break;
-                        
-                        /*
-                        if (i==0)
-                        {
-                            success = true;
-                            topTen[0] = msg.sender;
-                            currChampion = msg.sender;
-                        }
-                        */
-                    }
-                    else
-                    {
-                        success = false;
-                        /*
-                        // if you have beaten at least one other player, claim their place in the top10!
-                        if (i > 0)
-                        {
-                            topTen[i] = msg.sender;
-                        }
-                        throw;
-                        */
+                        currChampion = msg.sender;
                     }
                     
                     
                     
                     
                 }
+               
+                
                 
                
                
             }
-            //topTen[0] = msg.sender;
+            
+            addressToPowerlevel[msg.sender] = _tokenId;
+            
+            address[10] newTopTen = topTen;
+            
+            if (currChampion == msg.sender)
+            {
+                for (uint l=0;l<maxIndex; l++)
+                {
+                    // remove ourselves from this list in case 
+                    if(newTopTen[l] == msg.sender)
+                    {
+                        newTopTen[l] = 0x0;
+                        break;
+                    }
+                    
+                }
+            }
+            
+            
+            for (uint x=0; x<=myRank; x++)
+            {
+                if (x == myRank)
+                {
+                    
+                    newTopTen[x-1] = topTen[x]; 
+                    newTopTen[x] = msg.sender;
+                }
+                else
+                {
+                    if (x < maxIndex)
+                        newTopTen[x] = topTen[x+1];    
+                }
+                
+                
+            }
+            
+            topTen = newTopTen;
+            
         }
     
     
@@ -1301,16 +1320,15 @@ contract MonsterChampionship {
     
     
     
-    function MonsterChampionship(address coreContract)
+    function MonsterChampionship()
     {
-       core = ChainMonstersCore(coreContract);
+       //core = ChainMonstersCore(coreContract);
     }
 
 
 
 
 }
-
 
 
 // where the not-so-much "hidden" magic happens
