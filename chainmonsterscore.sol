@@ -1139,6 +1139,7 @@ contract MonsterChampionship {
     
     mapping (address => uint256) public addressToPowerlevel;
     mapping (uint256 => address) public rankToAddress;
+    mapping (address => bool) public cantAddressParticipate;
 
    
     
@@ -1149,8 +1150,10 @@ contract MonsterChampionship {
     function contestChampion(uint256 _tokenId) external {
             uint maxIndex = 9;
             
+            require(cantAddressParticipate[msg.sender] == false);
             
-            
+            // this saves from reentrancy attacks hopefully...
+            cantAddressParticipate[msg.sender] = true;
             
             // fail tx if player is already champion!
             // in theory players could increase their powerlevel by contesting themselves but
@@ -1160,7 +1163,7 @@ contract MonsterChampionship {
                 revert();
                 
             
-            
+           require(core.isTrainer(msg.sender));        
            require(core.monsterIndexToOwner(_tokenId) == msg.sender);
             
            
@@ -1226,7 +1229,7 @@ contract MonsterChampionship {
             }
             
             topTen = newTopTen;
-            
+            cantAddressParticipate[msg.sender] = false;
         }
     
     
