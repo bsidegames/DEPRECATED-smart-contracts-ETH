@@ -1193,7 +1193,7 @@ contract MonsterChampionship {
     uint256 public powerLevel;
     
     mapping (address => uint256) public addressToPowerlevel;
-    mapping (uint256 => address) public rankToAddress;
+    //mapping (uint256 => address) public rankToAddress;
 
    
     
