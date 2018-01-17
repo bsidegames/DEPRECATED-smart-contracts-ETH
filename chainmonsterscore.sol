@@ -1257,7 +1257,7 @@ contract MonsterChampionship {
                
             }
             
-            addressToPowerlevel[msg.sender] = _tokenId;
+            addressToPowerlevel[msg.sender] = myPowerlevel;
             
             address[10] newTopTen = topTen;
             
