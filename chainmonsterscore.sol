@@ -10,7 +10,7 @@ contract Ownable {
    * @dev The Ownable constructor sets the original `owner` of the contract to the sender
    * account.
    */
-  function Ownable() {
+  function Ownable() public {
     owner = msg.sender;
   }
 
@@ -28,7 +28,7 @@ contract Ownable {
    * @dev Allows the current owner to transfer control of the contract to a newOwner.
    * @param newOwner The address to transfer ownership to.
    */
-  function transferOwnership(address newOwner) onlyOwner {
+  function transferOwnership(address newOwner) public onlyOwner {
     if (newOwner != address(0)) {
       owner = newOwner;
     }
@@ -1193,7 +1193,7 @@ contract MonsterChampionship {
     uint256 public powerLevel;
     
     mapping (address => uint256) public addressToPowerlevel;
-    //mapping (uint256 => address) public rankToAddress;
+    mapping (uint256 => address) public rankToAddress;
 
    
     
@@ -1203,9 +1203,7 @@ contract MonsterChampionship {
     // and if strong enough placing your in the top10 as well
     function contestChampion(uint256 _tokenId) 
         external
-        returns (
-            bool success
-        ) {
+        {
             uint maxIndex = 9;
             
             
@@ -1230,7 +1228,7 @@ contract MonsterChampionship {
            // since we can't fight against ourself!
            require(myPowerlevel > addressToPowerlevel[msg.sender]);
            
-           uint curIndex = 0;
+          
            uint myRank = 0;
             
             for (uint i=0; i<=maxIndex; i++)
@@ -1259,7 +1257,7 @@ contract MonsterChampionship {
             
             addressToPowerlevel[msg.sender] = myPowerlevel;
             
-            address[10] newTopTen = topTen;
+            address[10] storage newTopTen = topTen;
             
             if (currChampion == msg.sender)
             {
@@ -1315,12 +1313,12 @@ contract MonsterChampionship {
 
     function rand(uint8 min, uint8 max) public returns (uint) {
         nonce++;
-        return uint8(sha3(nonce))%(min+max)-min;
+        return uint8(keccak256(nonce))%(min+max)-min;
     }
     
     
     
-    function MonsterChampionship(address coreContract)
+    function MonsterChampionship(address coreContract) public
     {
        core = ChainMonstersCore(coreContract);
     }
@@ -1338,7 +1336,7 @@ contract MonsterCreatorInterface is Ownable{
 
     function rand(uint8 min, uint8 max) public returns (uint8) {
         nonce++;
-        return uint8(sha3(nonce))%((min+max)-min);
+        return uint8(keccak256(nonce))%((min+max)-min);
     }
     
     //uint[151][8] public baseStats ;
@@ -1364,7 +1362,7 @@ contract MonsterCreatorInterface is Ownable{
     // not even switches are available, ugh!
 
     
-    function MonsterCreatorInterface() {
+    function MonsterCreatorInterface() public {
         
        
         _addBaseStats(1, [45, 49, 49, 65, 65, 45, 12, 4]);
@@ -1612,14 +1610,14 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         // this method might be deprecated in the future when the experience/level system gets introduced
         // so it is only used for the championship contest right now
         // the core logic stays the same though!
-    function getMonsterPowerLevel(uint256 _tokenId) external returns 
+    function getMonsterPowerLevel(uint256 _tokenId) external view returns 
         (
             uint256 powerlevel
         ) {
             Monster storage mon = monsters[_tokenId];
-            uint8[6] IVs = monsterIdToIVs[_tokenId];
+            uint8[6] storage IVs = monsterIdToIVs[_tokenId];
 
-            uint256 hp = (2*mon.hp + IVs[0] + 1) * 50/100 + 53 + 10;
+            //uint256 hp = (2*mon.hp + IVs[0] + 1) * 50/100 + 53 + 10;
             powerlevel = mon.hp + IVs[0] + mon.attack + IVs[1] + mon.defense + IVs[2] + mon.spAttack + IVs[3] + mon.spDefense +  IVs[4] + mon.speed + IVs[5];
         }
         
