@@ -64,15 +64,7 @@ contract ERC721 {
 
 
 
-contract MonstersBattleInterface {
-    function isMonsterBattle() public pure returns (bool);
 
-
-    function fightMonster(uint256 id, address owner) public returns (uint256);
-    function fightTrainer(address other, address me) public returns (uint256);
-
-    function fightGymLeader(uint256 id, address owner) public returns (uint256);
-}
 
 
 
@@ -269,7 +261,7 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
     ///  ownership is assigned, including births.
     event Transfer(address from, address to, uint256 tokenId);
 
-    MonstersBattleInterface public monsterBattle;
+    
 
     MonsterAuction public monsterAuction;
 
@@ -287,16 +279,7 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
     
     // An approximation of currently how many seconds are in between blocks.
     uint256 public secondsPerBlock = 15;
-
-
-    function setMonstersBattleAddress(address _address) external onlyAdmin {
-        MonstersBattleInterface candidateContract = MonstersBattleInterface(_address);
-
-        require(candidateContract.isMonsterBattle());
-
-        monsterBattle = candidateContract;
-    }
-
+  
 
     // array containing all monsters in existence
     Monster[] monsters;
@@ -336,7 +319,6 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
 // probably add other variables later
     function _createArea(uint256 _minLevel)
         internal
-        returns (uint)
         {
             Area memory _area = Area({
                
@@ -1226,6 +1208,7 @@ contract MonsterChampionship {
            
            // checks if this transaction is useless
            // since we can't fight against ourself!
+           // also stops reentrancy attacks
            require(myPowerlevel > addressToPowerlevel[msg.sender]);
            
           
