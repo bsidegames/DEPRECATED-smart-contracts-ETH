@@ -1183,7 +1183,7 @@ contract MonsterChampionship {
 
     bool public isMonsterChampionship = true;
     
-    //ChainMonstersCore core;
+    ChainMonstersCore core;
     
     // list of top ten 
     address[10] topTen;
@@ -1320,9 +1320,9 @@ contract MonsterChampionship {
     
     
     
-    function MonsterChampionship()
+    function MonsterChampionship(address coreContract)
     {
-       //core = ChainMonstersCore(coreContract);
+       core = ChainMonstersCore(coreContract);
     }
 
 
