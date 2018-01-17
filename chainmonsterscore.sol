@@ -317,10 +317,9 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
 
 
 // probably add other variables later
-    function _createArea(uint256 _minLevel)
-        internal 
-        {
-            Area memory _area = Area({
+    function _createArea(uint256 _minLevel) internal {
+            Area memory _area = Area
+            ({
                
                 minLevel: uint16(_minLevel)
             });
@@ -429,13 +428,11 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
                 uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(1));
                 mon = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], _owner, 1, false);
                
-            }
-            else if (_starterId == 2) {
+            } else if (_starterId == 2) {
                 uint8[8] memory Stats2 = uint8[8](monsterCreator.getMonsterStats(4));
                 mon = _createMonster(0, Stats2[0], Stats2[1], Stats2[2], Stats2[3], Stats2[4], Stats2[5], Stats2[6], Stats2[7], _owner, 4, false);
                 
-            }
-            else if (_starterId == 3) {
+            } else if (_starterId == 3) {
                 uint8[8] memory Stats3 = uint8[8](monsterCreator.getMonsterStats(7));
                 mon = _createMonster(0, Stats3[0], Stats3[1], Stats3[2], Stats3[3], Stats3[4], Stats3[5], Stats3[6], Stats3[7], _owner, 7, false);
                 
@@ -444,8 +441,7 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
         }
 
 
-    function _moveToArea(uint16 _newArea, address player)
-        internal {
+    function _moveToArea(uint16 _newArea, address player) internal {
             
             addressToTrainer[player].currArea = _newArea;
           
@@ -581,13 +577,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
     }
 
 
-    function transfer
-    (
-        address _to,
-        uint256 _tokenId
-    )
-        external 
-        {
+    function transfer (address _to, uint256 _tokenId) external {
         // Safety check to prevent against an unexpected 0x0 default.
         require(_to != address(0));
         // Disallow transfers to this contract to prevent accidental misuse.
@@ -612,11 +602,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
     ///  clear all approvals.
     /// @param _tokenId The ID of the monster that can be transferred if this call succeeds.
     /// @dev Required for ERC-721 compliance.
-    function approve(
-        address _to,
-        uint256 _tokenId
-    )
-        external {
+    function approve(address _to, uint256 _tokenId ) external {
         // Only an owner can grant transfer approval.
         require(_owns(msg.sender, _tokenId));
 
@@ -634,12 +620,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
     ///  including the caller.
     /// @param _tokenId The ID of the monster to be transferred.
     /// @dev Required for ERC-721 compliance.
-    function transferFrom
-    (
-        address _from,
-        address _to,
-        uint256 _tokenId
-    ) external {
+    function transferFrom (address _from, address _to, uint256 _tokenId ) external {
         // Safety check to prevent against an unexpected 0x0 default.
         require(_to != address(0));
         // Disallow transfers to this contract to prevent accidental misuse.
@@ -980,8 +961,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
 
 
 
-    function createAuction(uint256 _tokenId, uint256 _price, address _seller)
-        external {
+    function createAuction(uint256 _tokenId, uint256 _price, address _seller) external {
              require(_price == uint256(uint128(_price)));
             require(core._isTradeable(_tokenId));
              require(_owns(msg.sender, _tokenId));
@@ -1004,20 +984,17 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
              _addAuction(_tokenId, auction);
         }
 
-    function buy(uint256 _tokenId)
-        external
-        payable {
+    function buy(uint256 _tokenId) external payable {
             //delete auctionIdToSeller[_tokenId];
             // buy will throw if the bid or funds transfer fails
-            _buy(_tokenId, msg.value);
+            _buy (_tokenId, msg.value);
             _transfer(msg.sender, _tokenId);
             
             
         }
 
     
-    function cancelAuction(uint256 _tokenId)
-        external {
+    function cancelAuction(uint256 _tokenId) external {
             Auction storage auction = tokenIdToAuction[_tokenId];
             require(_isOnAuction(auction));
 
@@ -1169,8 +1146,7 @@ contract MonsterChampionship {
      // try to beat every other player in the top10 with your strongest monster!
     // effectively looping through all top10 players, beating them one by one 
     // and if strong enough placing your in the top10 as well
-    function contestChampion(uint256 _tokenId) 
-        external {
+    function contestChampion(uint256 _tokenId) external {
             uint maxIndex = 9;
             
             
@@ -1205,8 +1181,7 @@ contract MonsterChampionship {
                     // you have beaten this one so increase temporary rank
                     myRank = i;
                     
-                    if (myRank == maxIndex)
-                    {
+                    if (myRank == maxIndex) {
                         currChampion = msg.sender;
                     }
                     
@@ -1226,10 +1201,10 @@ contract MonsterChampionship {
             address[10] storage newTopTen = topTen;
             
             if (currChampion == msg.sender) {
-                for (uint l=0;l<maxIndex; l++) {
+                for (uint j=0; j<maxIndex; j++) {
                     // remove ourselves from this list in case 
-                    if(newTopTen[l] == msg.sender) {
-                        newTopTen[l] = 0x0;
+                    if (newTopTen[j] == msg.sender) {
+                        newTopTen[j] = 0x0;
                         break;
                     }
                     
@@ -1242,8 +1217,7 @@ contract MonsterChampionship {
                     
                     newTopTen[x-1] = topTen[x]; 
                     newTopTen[x] = msg.sender;
-                }
-                else {
+                } else {
                     if (x < maxIndex)
                         newTopTen[x] = topTen[x+1];    
                 }
@@ -1278,8 +1252,7 @@ contract MonsterChampionship {
     
     
     
-    function MonsterChampionship(address coreContract) public
-    {
+    function MonsterChampionship(address coreContract) public {
        core = ChainMonstersCore(coreContract);
     }
 
@@ -1290,7 +1263,7 @@ contract MonsterChampionship {
 
 
 // where the not-so-much "hidden" magic happens
-contract MonsterCreatorInterface is Ownable{
+contract MonsterCreatorInterface is Ownable {
 
     uint nonce = 0;
 
@@ -1341,23 +1314,7 @@ contract MonsterCreatorInterface is Ownable{
     
     // this serves as a lookup for new monsters to be generated since all monsters 
     // of the same id share the base stats
-    function getMonsterStats( uint256 _mID)
-        external
-        constant
-        returns(
-            uint8[8] stats
-            /*
-            uint256 hp,
-            uint256 attack,
-            uint256 defense,
-            uint256 spAttack,
-            uint256 spDefense,
-            uint256 speed,
-            uint256 typeOne,
-            uint256 typeTwo
-            */
-            
-        ) {
+    function getMonsterStats( uint256 _mID) external constant returns(uint8[8] stats) {
            stats[0] = baseStats[_mID][0];
            stats[1] = baseStats[_mID][1];
            stats[2] = baseStats[_mID][2];
@@ -1372,21 +1329,7 @@ contract MonsterCreatorInterface is Ownable{
         }
 
         // generates randomized IVs for a new monster
-        function getMonsterIVs( bool shiny)
-        external
-        
-        returns(
-            uint8[6] ivs
-            /*
-            uint256 hp,
-            uint256 attack,
-            uint256 defense,
-            uint256 spAttack,
-            uint256 spDefense,
-            uint256 speed
-            */
-            
-        ) {
+        function getMonsterIVs( bool shiny) external returns(uint8[6] ivs) {
 
             // IVs range between 0 and 31
             // gen0 monsters sold through the auction have a
@@ -1399,8 +1342,7 @@ contract MonsterCreatorInterface is Ownable{
                 ivs[4] = uint8(rand(10, 31));
                 ivs[5] = uint8(rand(10, 31));
                 
-            }
-            else {
+            } else {
                 ivs[0] = uint8(rand(0, 31));
                 ivs[1] = uint8(rand(0, 31));
                 ivs[2] = uint8(rand(0, 31));
@@ -1446,14 +1388,11 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     // due to the game being in active development on "launch"
     // this method will add more areas thus "unlocking" the ability to monsterch 
     // new monsters
-     function createArea(uint256 _minLevel)
-        public
-        onlyAdmin {
+     function createArea(uint256 _minLevel) public onlyAdmin {
             _createArea(_minLevel);
         }
 
-    function createTrainer(string _username, uint16 _starterId)
-        public {
+    function createTrainer(string _username, uint16 _starterId) public {
             
             
             // only one trainer/account per ethereum address
@@ -1471,16 +1410,14 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         }
         
         
-    function changeUsername(string _name)
-        public {
+    function changeUsername(string _name) public {
             require(addressToTrainer[msg.sender].owner == msg.sender);
             
             // check string??
             addressToTrainer[msg.sender].username = _name;
         }
         
-    function changeMonsterNickname(uint256 _tokenId, string _name)
-        public {
+    function changeMonsterNickname(uint256 _tokenId, string _name) public {
             // users won't be able to rename a monster that is part of an auction
             require(_owns(msg.sender, _tokenId));
             
@@ -1489,8 +1426,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
             monsterIdToNickname[_tokenId] = _name;
         }
 
-    function moveToArea(uint16 _newArea)
-        public {
+    function moveToArea(uint16 _newArea) public {
             // we are not locking the movement right now
             // only check if player level is high enough to enter this area!
              
@@ -1512,10 +1448,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
 
     
     // to be changed to retrieve current stats!
-    function getMonster(uint256 _id)
-        external
-        view
-        returns(
+    function getMonster(uint256 _id) external view returns (
         uint256 birthTime,
         uint256 generation,
         uint256 hp,
@@ -1554,15 +1487,14 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         // this method might be deprecated in the future when the experience/level system gets introduced
         // so it is only used for the championship contest right now
         // the core logic stays the same though!
-    function getMonsterPowerLevel(uint256 _tokenId) external view returns 
-        (
+    function getMonsterPowerLevel(uint256 _tokenId) external view returns (
             uint256 powerlevel
         ) {
             Monster storage mon = monsters[_tokenId];
             uint8[6] storage IVs = monsterIdToIVs[_tokenId];
 
             //uint256 hp = (2*mon.hp + IVs[0] + 1) * 50/100 + 53 + 10;
-            powerlevel = mon.hp + IVs[0] + mon.attack + IVs[1] + mon.defense + IVs[2] + mon.spAttack + IVs[3] + mon.spDefense +  IVs[4] + mon.speed + IVs[5];
+            powerlevel = mon.hp + IVs[0] + mon.attack + IVs[1] + mon.defense + IVs[2] + mon.spAttack + IVs[3] + mon.spDefense + IVs[4] + mon.speed + IVs[5];
         }
         
         
