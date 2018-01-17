@@ -1218,7 +1218,7 @@ contract MonsterChampionship {
             for (uint x=0; x<=myRank; x++) {
                 if (x == myRank) {
                     
-                    newTopTen[x-1] = topTen[x]; 
+                    //newTopTen[x-1] = topTen[x]; 
                     newTopTen[x] = msg.sender;
                 } else {
                     if (x < maxIndex)
@@ -1227,6 +1227,7 @@ contract MonsterChampionship {
                 
                 
             }
+            
             
             topTen = newTopTen;
             cantAddressParticipate[msg.sender] = false;
