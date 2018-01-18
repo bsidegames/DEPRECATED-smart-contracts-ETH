@@ -1229,7 +1229,7 @@ contract MonsterCreatorInterface is Ownable {
 
     function rand(uint8 min, uint8 max) public returns (uint8) {
         nonce++;
-        uint8 result = (uint8(sha3(block.blockhash(block.number-1), nonce ))%31);
+        uint8 result = (uint8(sha3(block.blockhash(block.number-1), nonce ))%max);
         
         if (result < min)
         {
@@ -1243,7 +1243,13 @@ contract MonsterCreatorInterface is Ownable {
 
     function shinyRand(uint16 min, uint16 max) public returns (uint16) {
         nonce++;
-        return uint16(keccak256(nonce))%((min+max)-min);
+        uint16 result = (uint16(sha3(block.blockhash(block.number-1), nonce ))%max);
+        
+        if (result < min)
+        {
+            result = result+min;
+        }
+        return result;
     }
     
     
