@@ -1086,7 +1086,7 @@ contract ChainMonstersAuction is MonsterOwnership {
 // can and will be upgraded during development with new battle system!
 // this is just to give players something to do and test their monsters
 // also demonstrates how we can build up more mechanics on top of our locked core contract!
-contract MonsterChampionship {
+contract MonsterChampionship is Ownable {
 
     bool public isMonsterChampionship = true;
     
@@ -1214,6 +1214,15 @@ contract MonsterChampionship {
     
     function MonsterChampionship(address coreContract) public {
        core = ChainMonstersCore(coreContract);
+    }
+    
+    function withdrawBalance() external onlyOwner {
+       
+        uint256 balance = this.balance;
+       
+       
+        owner.transfer(balance);
+        
     }
 
 
@@ -1377,6 +1386,15 @@ contract MonsterCreatorInterface is Ownable {
             }
             
         }
+        
+        function withdrawBalance() external onlyOwner {
+       
+        uint256 balance = this.balance;
+       
+       
+        owner.transfer(balance);
+        
+    }
 }
 
 contract ChainMonstersCore is ChainMonstersAuction, Ownable {
