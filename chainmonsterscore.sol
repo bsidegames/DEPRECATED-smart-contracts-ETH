@@ -1229,8 +1229,16 @@ contract MonsterCreatorInterface is Ownable {
 
     function rand(uint8 min, uint8 max) public returns (uint8) {
         nonce++;
-        return uint8(keccak256(nonce))%((min+max)-min);
+        uint8 result = (uint8(sha3(block.blockhash(block.number-1), nonce ))%31);
+        
+        if (result < min)
+        {
+            result = result+min;
+        }
+        return result;
     }
+    
+    
 
 
     function shinyRand(uint16 min, uint16 max) public returns (uint16) {
@@ -1344,7 +1352,7 @@ contract MonsterCreatorInterface is Ownable {
             }
             
             if (shiny) {
-                ivs[0] = uint8(rand(15, 31));
+                 ivs[0] = uint8(rand(15, 31));
                 ivs[1] = uint8(rand(15, 31));
                 ivs[2] = uint8(rand(15, 31));
                 ivs[3] = uint8(rand(15, 31));
@@ -1459,6 +1467,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         uint256 mID,
         bool tradeable, 
         uint256 uID
+        
             
         ) {    
        Monster storage mon = monsters[_id];
