@@ -275,7 +275,7 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
 
      mapping (uint256 => MonsterBaseStats) public baseStats;
 
-     mapping (uint256 => uint8[6]) public monsterIdToIVs;
+     mapping (uint256 => uint8[7]) public monsterIdToIVs;
     
 
 
@@ -1034,7 +1034,7 @@ contract ChainMonstersAuction is MonsterOwnership {
 
         promoCreatedCount++;
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs());
+        uint8[7] memory IVs = uint8[7](monsterCreator.getGen0IVs());
         
         uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], _owner, _mId, true);
         monsterIdToTradeable[monsterId] = true;
@@ -1049,7 +1049,7 @@ contract ChainMonstersAuction is MonsterOwnership {
         require(gen0CreatedCount < GEN0_CREATION_LIMIT);
 
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs());
+        uint8[7] memory IVs = uint8[7](monsterCreator.getGen0IVs());
         uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], this, _mId, true);
         monsterIdToTradeable[monsterId] = true;
 
@@ -1068,7 +1068,7 @@ contract ChainMonstersAuction is MonsterOwnership {
 
       
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs());
+        uint8[7] memory IVs = uint8[7](monsterCreator.getGen0IVs());
         uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], this, _mId, true);
         monsterIdToTradeable[monsterId] = true;
 
@@ -1231,6 +1231,12 @@ contract MonsterCreatorInterface is Ownable {
         nonce++;
         return uint8(keccak256(nonce))%((min+max)-min);
     }
+
+
+    function shinyRand(uint16 min, uint16 max) public returns (uint16) {
+        nonce++;
+        return uint16(keccak256(nonce))%((min+max)-min);
+    }
     
     
     
@@ -1289,9 +1295,15 @@ contract MonsterCreatorInterface is Ownable {
         }
 
         // generates randomized IVs for a new monster
-        function getMonsterIVs() external returns(uint8[6] ivs) {
+        function getMonsterIVs() external returns(uint8[7] ivs) {
 
             bool shiny = false;
+
+            uint16 chance = shinyRand(1, 8192);
+
+            if (chance == 42) {
+                shiny = true;
+            }
 
             // IVs range between 0 and 31
             // stat range modified for shiny monsters!
@@ -1302,6 +1314,7 @@ contract MonsterCreatorInterface is Ownable {
                 ivs[3] = uint8(rand(10, 31));
                 ivs[4] = uint8(rand(10, 31));
                 ivs[5] = uint8(rand(10, 31));
+                ivs[6] = 1;
                 
             } else {
                 ivs[0] = uint8(rand(0, 31));
@@ -1310,16 +1323,25 @@ contract MonsterCreatorInterface is Ownable {
                 ivs[3] = uint8(rand(0, 31));
                 ivs[4] = uint8(rand(0, 31));
                 ivs[5] = uint8(rand(0, 31));
+                ivs[6] = 0;
             }
+
+            
 
         }
 
 
         // gen0 monsters profit from shiny boost while shiny gen0s have potentially even higher IVs!
-        // further increasing the rarity
-        function getGen0IVs() external returns (uint8[6] ivs) {
+        // further increasing the rarity by also doubling the shiny chance!
+        function getGen0IVs() external returns (uint8[7] ivs) {
             
             bool shiny = false;
+
+            uint16 chance = shinyRand(1, 4096);
+
+            if (chance == 42) {
+                shiny = true;
+            }
             
             if (shiny) {
                 ivs[0] = uint8(rand(15, 31));
@@ -1328,6 +1350,7 @@ contract MonsterCreatorInterface is Ownable {
                 ivs[3] = uint8(rand(15, 31));
                 ivs[4] = uint8(rand(15, 31));
                 ivs[5] = uint8(rand(15, 31));
+                ivs[6] = 1;
                 
             } else {
                 ivs[0] = uint8(rand(10, 31));
@@ -1336,7 +1359,9 @@ contract MonsterCreatorInterface is Ownable {
                 ivs[3] = uint8(rand(10, 31));
                 ivs[4] = uint8(rand(10, 31));
                 ivs[5] = uint8(rand(10, 31));
+                ivs[6] = 0;
             }
+            
         }
 }
 
@@ -1385,7 +1410,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
             uint256 mon = _createTrainer(_username, _starterId, msg.sender);
             
             // due to stack limitations we have to assign the IVs here:
-            uint8[6] memory IVs = uint8[6](monsterCreator.getMonsterIVs());
+            uint8[7] memory IVs = uint8[7](monsterCreator.getMonsterIVs());
             monsterIdToIVs[mon] = IVs;
             
         }
@@ -1461,7 +1486,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
             uint256 powerlevel
         ) {
             Monster storage mon = monsters[_tokenId];
-            uint8[6] storage IVs = monsterIdToIVs[_tokenId];
+            uint8[7] storage IVs = monsterIdToIVs[_tokenId];
 
             
             powerlevel = mon.hp + IVs[0] + mon.attack + IVs[1] + mon.defense + IVs[2] + mon.spAttack + IVs[3] + mon.spDefense + IVs[4] + mon.speed + IVs[5];
