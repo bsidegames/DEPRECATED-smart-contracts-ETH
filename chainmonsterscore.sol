@@ -820,7 +820,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
         ownerCut = _cut;
 
         ERC721 candidateContract = ERC721(_nftAddress);
-        //require(candidateContract.supportsInterface(InterfaceSignature_ERC721));
+        
         nonFungibleContract = candidateContract;
         ChainMonstersCore candidateCoreContract = ChainMonstersCore(_nftAddress);
         core = candidateCoreContract;
@@ -894,7 +894,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
              require(_owns(msg.sender, _tokenId));
              _escrow(msg.sender, _tokenId);
 
-            // _approve(_monsterId, saleAuction);
+            
 
             
              Auction memory auction = Auction(
@@ -927,7 +927,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
 
             address seller = auction.seller;
             require(msg.sender == seller);
-            //delete auctionIdToSeller[_tokenId];
+            
             
             _cancelAuction(_tokenId, seller);
         }
@@ -1145,7 +1145,7 @@ contract MonsterChampionship is Ownable {
             for (uint x=0; x<=myRank; x++) {
                 if (x == myRank) {
                     
-                    //newTopTen[x-1] = topTen[x]; 
+                   
                     newTopTen[x] = msg.sender;
                 } else {
                     if (x < maxIndex)
