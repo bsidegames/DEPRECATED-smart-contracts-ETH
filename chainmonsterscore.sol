@@ -316,7 +316,6 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
 
             Monster memory _monster = Monster({
                 birthTime: uint64(now),
-                //generation: uint16(_generation),
                 hp: uint16(_hp),
                 attack: uint16(_attack),
                 defense: uint16(_defense),
@@ -864,7 +863,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
     }
     
     // only possible to decrease ownerCut!
-    function setOwnerCut(uint256 _cut) onlyAdmin {
+    function setOwnerCut(uint256 _cut) onlyOwner {
         require(_cut <= ownerCut);
         ownerCut = _cut;
     }
@@ -1026,7 +1025,7 @@ contract ChainMonstersAuction is MonsterOwnership {
 
     // all we can influence is the level of the generated monster
     // its stats are completely dependent on the spawn alghorithm
-    function createPromoMonster(uint256 _mId, address _owner, bool shiny) external onlyAdmin {
+    function createPromoMonster(uint256 _mId, address _owner) external onlyAdmin {
        
 
        
@@ -1035,7 +1034,7 @@ contract ChainMonstersAuction is MonsterOwnership {
 
         promoCreatedCount++;
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs(true));
+        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs());
         
         uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], _owner, _mId, true);
         monsterIdToTradeable[monsterId] = true;
@@ -1046,11 +1045,11 @@ contract ChainMonstersAuction is MonsterOwnership {
     }
 
 
-    function createGen0Auction(uint256 _mId, uint256 price, bool shiny) external onlyAdmin {
+    function createGen0Auction(uint256 _mId, uint256 price) external onlyAdmin {
         require(gen0CreatedCount < GEN0_CREATION_LIMIT);
 
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs(shiny));
+        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs());
         uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], this, _mId, true);
         monsterIdToTradeable[monsterId] = true;
 
@@ -1063,13 +1062,13 @@ contract ChainMonstersAuction is MonsterOwnership {
         
     }
 
-    function _createGen0Auction(uint256 _mId, uint256 price, bool shiny) internal {
+    function _createGen0Auction(uint256 _mId, uint256 price) internal {
         require(gen0CreatedCount < GEN0_CREATION_LIMIT);
 
 
       
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs(shiny));
+        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs());
         uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], this, _mId, true);
         monsterIdToTradeable[monsterId] = true;
 
@@ -1115,8 +1114,7 @@ contract MonsterChampionship {
             
            
             
-            // this saves from reentrancy attacks hopefully...
-            cantAddressParticipate[msg.sender] = true;
+           
             
             // fail tx if player is already champion!
             // in theory players could increase their powerlevel by contesting themselves but
@@ -1291,7 +1289,9 @@ contract MonsterCreatorInterface is Ownable {
         }
 
         // generates randomized IVs for a new monster
-        function getMonsterIVs( bool shiny) external returns(uint8[6] ivs) {
+        function getMonsterIVs() external returns(uint8[6] ivs) {
+
+            bool shiny = false;
 
             // IVs range between 0 and 31
             // stat range modified for shiny monsters!
@@ -1317,7 +1317,10 @@ contract MonsterCreatorInterface is Ownable {
 
         // gen0 monsters profit from shiny boost while shiny gen0s have potentially even higher IVs!
         // further increasing the rarity
-        function getGen0IVs(bool shiny) external returns (uint8[6] ivs) {
+        function getGen0IVs() external returns (uint8[6] ivs) {
+            
+            bool shiny = false;
+            
             if (shiny) {
                 ivs[0] = uint8(rand(15, 31));
                 ivs[1] = uint8(rand(15, 31));
@@ -1382,7 +1385,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
             uint256 mon = _createTrainer(_username, _starterId, msg.sender);
             
             // due to stack limitations we have to assign the IVs here:
-            uint8[6] memory IVs = uint8[6](monsterCreator.getMonsterIVs(false));
+            uint8[6] memory IVs = uint8[6](monsterCreator.getMonsterIVs());
             monsterIdToIVs[mon] = IVs;
             
         }
