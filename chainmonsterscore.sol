@@ -829,7 +829,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
     }
     
     // only possible to decrease ownerCut!
-    function setOwnerCut(uint256 _cut) onlyOwner {
+    function setOwnerCut(uint256 _cut) external onlyOwner {
         require(_cut <= ownerCut);
         ownerCut = _cut;
     }
@@ -1200,6 +1200,7 @@ contract MonsterChampionship is Ownable {
 // where the not-so-much "hidden" magic happens
 contract MonsterCreatorInterface is Ownable {
 
+    uint8 public lockedMonsterStatsCount = 0;
     uint nonce = 0;
 
     function rand(uint8 min, uint8 max) public returns (uint8) {
@@ -1244,7 +1245,11 @@ contract MonsterCreatorInterface is Ownable {
         
         
         baseStats[_mId] = data;
+        lockedMonsterStatsCount++;
     }
+
+
+    
 
 
     
