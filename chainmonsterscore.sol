@@ -79,8 +79,7 @@ contract MonsterAccessControl {
     address public adminAddress;
     
 
-    // @dev Keeps track whether the contract is paused. When that is true, most actions are blocked
-    bool public paused = false;
+  
 
     /// @dev Access modifier for CEO-only functionality
     modifier onlyAdmin() {
@@ -151,16 +150,7 @@ contract MonstersData {
     struct Area {
         // areaID used in-engine to determine world position
        
-        
-        // maybe add area based connections so that u can't travel
-        // from A to C without passing B first??
-        // also makes Bots harder to write...
-        
-        
-        // area based percentages?
-        
-       
-        
+             
         // minimum level to enter this area...
         uint16 minLevel;
     }
@@ -171,22 +161,10 @@ contract MonstersData {
         
         // add username
         string username;
+       
         
-        // starter monsters
-        uint16 starterId;
-        
-        // current lomonsterion in the "world"
+        // current area in the "world"
         uint16 currArea;
-
-        // make players level too!
-        uint16 level;
-
-        // determines how many gmys the player has beaten so far!
-        // can be used to make inventory more interesting
-        uint16 numBadges;
-        
-        // determines if player is currently busy which will be used later on!
-        bool isBusy;
         
         address owner;
         
@@ -224,19 +202,22 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
     ///  ownership is assigned, including births.
     event Transfer(address from, address to, uint256 tokenId);
 
-    
+    bool lockedMonsterCreator = false;
 
     MonsterAuction public monsterAuction;
 
-     MonsterCreatorInterface public monsterCreator;
+    MonsterCreatorInterface public monsterCreator;
 
 
     function setMonsterCreatorAddress(address _address) external onlyAdmin {
+        // only set this once so we (the devs) can't cheat!
+        require(!lockedMonsterCreator);
         MonsterCreatorInterface candidateContract = MonsterCreatorInterface(_address);
 
-       // require(candidateContract.isMonsterCreator());
+       
 
         monsterCreator = candidateContract;
+        lockedMonsterCreator = true;
 
     }
     
@@ -247,9 +228,10 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
     // array containing all monsters in existence
     Monster[] monsters;
 
-    Area[] areas;
+    uint8[] areas;
 
-    Trainer[] trainers;
+    uint8 areaIndex = 0;
+    
 
 
       mapping(address => Trainer) public addressToTrainer;
@@ -279,16 +261,13 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
     
 
 
-// probably add other variables later
-    function _createArea(uint256 _minLevel) internal {
-            Area memory _area = Area
-            ({
-               
-                minLevel: uint16(_minLevel)
-            });
-            uint256 areaId = areas.push(_area);
+    // adds new area to world 
+    function _createArea() internal {
             
-            require(areaId == uint256(uint32(areaId)));
+            areaIndex++;
+            areas.push(areaIndex);
+            
+            
         }
 
     
@@ -312,7 +291,7 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
         internal
         returns (uint)
         {
-           // require(_generation == uint256(uint16(_generation)));
+           
 
             Monster memory _monster = Monster({
                 birthTime: uint64(now),
@@ -359,24 +338,11 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
                
                 birthTime: uint64(now),
                 username: string(_username),
-                starterId: uint16(_starterId),
                 currArea: uint16(1), // sets to first area!,
-                level: uint16(1),
-                numBadges: uint16(0),
-                isBusy: false, // maybe set to true at startup?,
                 owner: address(_owner)
                 
             });
-            //uint256 trainerId = trainers.push(_trainer)-1;
-            //addressToIndex[_owner] = trainerId;
-             addressToTrainer[_owner] = _trainer;
             
-           // require(trainerId == uint256(uint32(trainerId)));
-            
-            // create starter monster!
-            // starter monster are always gen0!
-
-// TODO
             // starter stats are hardcoded!
             if (_starterId == 1) {
                 uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(1));
@@ -422,7 +388,7 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
     }
 
 
-    // Any C-level can fix how many seconds per blocks are currently observed.
+    // Only admin can fix how many seconds per blocks are currently observed.
     function setSecondsPerBlock(uint256 secs) external onlyAdmin {
         //require(secs < cooldowns[0]);
         secondsPerBlock = secs;
@@ -1023,7 +989,7 @@ contract ChainMonstersAuction is MonsterOwnership {
     uint256 public gen0CreatedCount;
 
 
-    // all we can influence is the level of the generated monster
+    
     // its stats are completely dependent on the spawn alghorithm
     function createPromoMonster(uint256 _mId, address _owner) external onlyAdmin {
        
@@ -1095,9 +1061,9 @@ contract MonsterChampionship is Ownable {
     // list of top ten 
     address[10] topTen;
 
-    // holds the address and data of current "world" champion
+    // holds the address current "world" champion
     address public currChampion;
-    uint256 public powerLevel;
+    
     
     mapping (address => uint256) public addressToPowerlevel;
     mapping (uint256 => address) public rankToAddress;
@@ -1411,8 +1377,8 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         adminAddress = msg.sender;
         
 
-        _createArea(0);
-        _createArea(0);
+        _createArea(); // area 1
+        _createArea(); // area 2
         
     
 
@@ -1425,8 +1391,8 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     // due to the game being in active development on "launch"
     // each monster has a maximum number of 3 areas where it can appear
     // 
-     function createArea(uint256 _minLevel) public onlyAdmin {
-            _createArea(_minLevel);
+     function createArea() public onlyAdmin {
+            _createArea();
         }
 
     function createTrainer(string _username, uint16 _starterId) public {
@@ -1466,6 +1432,9 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
 
     function moveToArea(uint16 _newArea) public {
            
+            // never allow anyone to move to area 0 or below since this is used
+            // to determine if a trainer profile exists in another method!
+            require(_newArea > 0);
             
             // make sure that this area exists yet!
             require(areas.length >= _newArea);
@@ -1538,7 +1507,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     ) {
         Trainer storage trainer = addressToTrainer[_check];
 
-        if (trainer.level > 0)
+        if (trainer.currArea > 0)
             return true;
         else
             return false;
