@@ -204,44 +204,7 @@ contract MonstersData {
    
 
    
-     //monsterIdToGeneration[newMonsterId] = _generation;
-    /*
-    MonsterBaseStats[1] monsterBaseStats = [
-       MonsterBaseStats(1, 2, 3, 4, 5, 6)
-        ];
-    
-    */
   
-    // this gets called during contract creation to populate and hardcode the spawnchances
-    /*
-    function _createSpawnChance(uint8[3] _areas, uint16 _spawnChance, uint16 _shinyChance)
-        internal
-        {
-            MonsterSpawnChance memory _monster = MonsterSpawnChance({
-                areas: _areas,
-                spawnChance: uint16(_spawnChance),
-                shinyChance: uint16(_shinyChance)
-
-
-            });
-            monsterSpawnChances.push(_monster);
-            
-            /* breakdown of spawn chances
-            based on 100.000 monsters as an example
-         100,00% = 100.000 = 1
-          10,00% =  10.000 = 0,1
-           1,00% =   1.000 = 0,01
-           0,10% =     100 = 0,001
-           0,01% =      10 = 0,0001
-          0,001% =       1 = 0,00001
-
-          //If an area has 5 different monsters that could potentially spawn then they are competing with each other
-        shinyChance = 16/65536
-        -> 100.000 monster -> ca 24,4 shiny ones 
-            
-        }
-
-    */
     
 
 
@@ -376,15 +339,7 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
             require(newMonsterId == uint256(uint32(newMonsterId)));
             
            
-            /*
-            Spawn(
-                newmonsterId,
-                uint256(_monster.generation),
-                uint256(_monster.monsterTypeOne),
-                uint256(_monster.monsterTypeTwo)
-
-            );
-            */
+          
             
              monsterIdToNickname[newMonsterId] = "";
 
@@ -908,6 +863,13 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
         
     }
     
+    // only possible to decrease ownerCut!
+    function setOwnerCut(uint256 _cut) onlyAdmin {
+        require(_cut <= ownerCut);
+        ownerCut = _cut;
+    }
+    
+    
     function _owns(address _claimant, uint256 _tokenId) internal view returns (bool) {
         return (nonFungibleContract.ownerOf(_tokenId) == _claimant);
     }
@@ -1055,7 +1017,7 @@ contract ChainMonstersAuction is MonsterOwnership {
 
     uint256 public constant PROMO_CREATION_LIMIT = 5000;
 
-    uint256 public constant GEN0_CREATION_LIMIT = 45000;
+    uint256 public constant GEN0_CREATION_LIMIT = 5000;
 
     // Counts the number of monster the contract owner has created.
     uint256 public promoCreatedCount;
@@ -1063,8 +1025,8 @@ contract ChainMonstersAuction is MonsterOwnership {
 
 
     // all we can influence is the level of the generated monster
-    // its stats are completely dependend on the spawn alghorithm
-    function createPromoMonster(uint256 _mId, address _owner) external onlyAdmin {
+    // its stats are completely dependent on the spawn alghorithm
+    function createPromoMonster(uint256 _mId, address _owner, bool shiny) external onlyAdmin {
        
 
        
@@ -1073,7 +1035,7 @@ contract ChainMonstersAuction is MonsterOwnership {
 
         promoCreatedCount++;
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[6] memory IVs = uint8[6](monsterCreator.getMonsterIVs(true));
+        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs(true));
         
         uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], _owner, _mId, true);
         monsterIdToTradeable[monsterId] = true;
@@ -1084,11 +1046,11 @@ contract ChainMonstersAuction is MonsterOwnership {
     }
 
 
-    function createGen0Auction(uint256 _mId, uint256 price) external onlyAdmin {
+    function createGen0Auction(uint256 _mId, uint256 price, bool shiny) external onlyAdmin {
         require(gen0CreatedCount < GEN0_CREATION_LIMIT);
 
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[6] memory IVs = uint8[6](monsterCreator.getMonsterIVs(true));
+        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs(shiny));
         uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], this, _mId, true);
         monsterIdToTradeable[monsterId] = true;
 
@@ -1101,13 +1063,13 @@ contract ChainMonstersAuction is MonsterOwnership {
         
     }
 
-    function _createGen0Auction(uint256 _mId, uint256 price) internal {
+    function _createGen0Auction(uint256 _mId, uint256 price, bool shiny) internal {
         require(gen0CreatedCount < GEN0_CREATION_LIMIT);
 
 
       
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[6] memory IVs = uint8[6](monsterCreator.getMonsterIVs(true));
+        uint8[6] memory IVs = uint8[6](monsterCreator.getGen0IVs(shiny));
         uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], this, _mId, true);
         monsterIdToTradeable[monsterId] = true;
 
@@ -1124,6 +1086,7 @@ contract ChainMonstersAuction is MonsterOwnership {
 // used during launch for world championship
 // can and will be upgraded during development with new battle system!
 // this is just to give players something to do and test their monsters
+// also demonstrates how we can build up more mechanics on top of our locked core contract!
 contract MonsterChampionship {
 
     bool public isMonsterChampionship = true;
@@ -1139,7 +1102,7 @@ contract MonsterChampionship {
     
     mapping (address => uint256) public addressToPowerlevel;
     mapping (uint256 => address) public rankToAddress;
-    mapping (address => bool) public cantAddressParticipate;
+    
 
    
     
@@ -1150,7 +1113,7 @@ contract MonsterChampionship {
     function contestChampion(uint256 _tokenId) external {
             uint maxIndex = 9;
             
-            require(cantAddressParticipate[msg.sender] == false);
+           
             
             // this saves from reentrancy attacks hopefully...
             cantAddressParticipate[msg.sender] = true;
@@ -1230,7 +1193,7 @@ contract MonsterChampionship {
             
             
             topTen = newTopTen;
-            cantAddressParticipate[msg.sender] = false;
+            
         }
     
     
@@ -1247,12 +1210,7 @@ contract MonsterChampionship {
 
 
 
-    uint nonce = 0;
-
-    function rand(uint8 min, uint8 max) public returns (uint) {
-        nonce++;
-        return uint8(keccak256(nonce))%(min+max)-min;
-    }
+    
     
     
     
@@ -1276,30 +1234,30 @@ contract MonsterCreatorInterface is Ownable {
         return uint8(keccak256(nonce))%((min+max)-min);
     }
     
-    //uint[151][8] public baseStats ;
+    
     
     mapping(uint256 => uint8[8]) public baseStats;
 
     function addBaseStats(uint256 _mId, uint8[8] data) external onlyOwner {
-        // uncomment this to "lock" the stats down forever
-        //require(baseStats[_mId][0] == 0);
+        // lock" the stats down forever
+        // since hp is never going to be 0 this is a valid check
+        // so we have to be extra careful when adding new baseStats!
+        require(data[0] > 0);
+        require(baseStats[_mId][0] == 0);
         baseStats[_mId] = data;
     }
     
     function _addBaseStats(uint256 _mId, uint8[8] data) internal {
-        // uncomment this to "lock" the stats down forever
-        //require(baseStats[_mId][0] == 0);
+        
+        
         baseStats[_mId] = data;
     }
 
-    // This is hell of an ugly method but for 151 unique monsters this is the only
-    // way to make this happen without hitting the ethereum block size limit...
-    // not even switches are available, ugh!
 
     
     function MonsterCreatorInterface() public {
         
-       
+       // these monsters are already down and "locked" down stats/design wise
         _addBaseStats(1, [45, 49, 49, 65, 65, 45, 12, 4]);
         _addBaseStats(2, [60, 62, 63, 80, 80, 60, 12, 4]);
         _addBaseStats(3, [80, 82, 83, 100, 100, 80, 12, 4]);
@@ -1336,8 +1294,7 @@ contract MonsterCreatorInterface is Ownable {
         function getMonsterIVs( bool shiny) external returns(uint8[6] ivs) {
 
             // IVs range between 0 and 31
-            // gen0 monsters sold through the auction have a
-            // stat modifier in here which pretends that they are shiny!
+            // stat range modified for shiny monsters!
             if (shiny == true) {
                 ivs[0] = uint8(rand(10, 31));
                 ivs[1] = uint8(rand(10, 31));
@@ -1356,12 +1313,35 @@ contract MonsterCreatorInterface is Ownable {
             }
 
         }
+
+
+        // gen0 monsters profit from shiny boost while shiny gen0s have potentially even higher IVs!
+        // further increasing the rarity
+        function getGen0IVs(bool shiny) external returns (uint8[6] ivs) {
+            if (shiny) {
+                ivs[0] = uint8(rand(15, 31));
+                ivs[1] = uint8(rand(15, 31));
+                ivs[2] = uint8(rand(15, 31));
+                ivs[3] = uint8(rand(15, 31));
+                ivs[4] = uint8(rand(15, 31));
+                ivs[5] = uint8(rand(15, 31));
+                
+            } else {
+                ivs[0] = uint8(rand(10, 31));
+                ivs[1] = uint8(rand(10, 31));
+                ivs[2] = uint8(rand(10, 31));
+                ivs[3] = uint8(rand(10, 31));
+                ivs[4] = uint8(rand(10, 31));
+                ivs[5] = uint8(rand(10, 31));
+            }
+        }
 }
 
 contract ChainMonstersCore is ChainMonstersAuction, Ownable {
 
-    
-    //address monsterCreator;
+
+   // using a bool to enable us to prepare the game 
+   bool hasLaunched = false;
 
 
     
@@ -1379,26 +1359,20 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         
     }
     
-    // use to spawn "huge" (due to gas limit only 10 max...) monster waves
-    function createMonsterWave(uint256 counter) external onlyAdmin {
-        for (uint i=1; i<counter+1; i++) {
-            _createGen0Auction(i, i*1000);
-        }
-    }
-
-
+    
     // used to add playable content to the game 
-    // monsters only spawn in certain areas so some are locked on release
+    // monsters will only spawn in certain areas so some are locked on release
     // due to the game being in active development on "launch"
-    // this method will add more areas thus "unlocking" the ability to monsterch 
-    // new monsters
+    // each monster has a maximum number of 3 areas where it can appear
+    // 
      function createArea(uint256 _minLevel) public onlyAdmin {
             _createArea(_minLevel);
         }
 
     function createTrainer(string _username, uint16 _starterId) public {
             
-            
+            require(hasLaunched);
+
             // only one trainer/account per ethereum address
             require(addressToTrainer[msg.sender].owner == 0);
            
@@ -1408,7 +1382,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
             uint256 mon = _createTrainer(_username, _starterId, msg.sender);
             
             // due to stack limitations we have to assign the IVs here:
-            uint8[6] memory IVs = uint8[6](monsterCreator.getMonsterIVs(true));
+            uint8[6] memory IVs = uint8[6](monsterCreator.getMonsterIVs(false));
             monsterIdToIVs[mon] = IVs;
             
         }
@@ -1417,7 +1391,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     function changeUsername(string _name) public {
             require(addressToTrainer[msg.sender].owner == msg.sender);
             
-            // check string??
+            
             addressToTrainer[msg.sender].username = _name;
         }
         
@@ -1431,17 +1405,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         }
 
     function moveToArea(uint16 _newArea) public {
-            // we are not locking the movement right now
-            // only check if player level is high enough to enter this area!
-             
-           /*  
-            uint256 _index = addressToIndex[msg.sender];
-            Trainer storage trainer = trainers[_index];
-            require(trainer.currArea != _newArea);
-            
-
-            require(trainer.level >= areas[_newArea].minLevel);
-             */
+           
             
             // make sure that this area exists yet!
             require(areas.length >= _newArea);
@@ -1488,16 +1452,15 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
             
         }
         
-        // this method might be deprecated in the future when the experience/level system gets introduced
-        // so it is only used for the championship contest right now
-        // the core logic stays the same though!
+        // this method only returns the "base" powerlevel of a monster which will be used
+        // in more advanced fighting calculations later on
     function getMonsterPowerLevel(uint256 _tokenId) external view returns (
             uint256 powerlevel
         ) {
             Monster storage mon = monsters[_tokenId];
             uint8[6] storage IVs = monsterIdToIVs[_tokenId];
 
-            //uint256 hp = (2*mon.hp + IVs[0] + 1) * 50/100 + 53 + 10;
+            
             powerlevel = mon.hp + IVs[0] + mon.attack + IVs[1] + mon.defense + IVs[2] + mon.spAttack + IVs[3] + mon.spDefense + IVs[4] + mon.speed + IVs[5];
         }
         
@@ -1531,5 +1494,11 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
        
         owner.transfer(balance);
         
+    }
+
+    // after we have setup everything we can unlock the game
+    // for public
+    function launchGame() external onlyOwner {
+        hasLaunched = true;
     }
 }
