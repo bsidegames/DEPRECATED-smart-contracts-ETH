@@ -665,7 +665,7 @@ contract MonsterAuctionBase {
         address seller;
 
         // price in wei
-        uint128 price;
+        uint256 price;
 
         // time when auction started
         uint64 startedAt;
@@ -889,7 +889,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
 
 
     function createAuction(uint256 _tokenId, uint256 _price, address _seller) external {
-             require(_price == uint256(uint128(_price)));
+             require(_price == uint256(_price));
             require(core._isTradeable(_tokenId));
              require(_owns(msg.sender, _tokenId));
              _escrow(msg.sender, _tokenId);
@@ -899,7 +899,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
             
              Auction memory auction = Auction(
                  _seller,
-                 uint128(_price),
+                 uint256(_price),
                  uint64(now),
                  uint256(auctionIndex)
              );
@@ -994,7 +994,9 @@ contract ChainMonstersAuction is MonsterOwnership {
     function createPromoMonster(uint256 _mId, address _owner) external onlyAdmin {
        
 
-       
+       // during generation we have to keep in mind that we have only 10,000 tokens available
+       // which have to be divided by 151 monsters, some rarer than others
+       // see WhitePaper for gen0/promo monster plan
         
         require(promoCreatedCount < PROMO_CREATION_LIMIT);
 
@@ -1009,6 +1011,8 @@ contract ChainMonstersAuction is MonsterOwnership {
         
        
     }
+
+   
 
 
     function createGen0Auction(uint256 _mId, uint256 price) external onlyAdmin {
@@ -1028,23 +1032,7 @@ contract ChainMonstersAuction is MonsterOwnership {
         
     }
 
-    function _createGen0Auction(uint256 _mId, uint256 price) internal {
-        require(gen0CreatedCount < GEN0_CREATION_LIMIT);
-
-
-      
-        uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[7] memory IVs = uint8[7](monsterCreator.getGen0IVs());
-        uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], this, _mId, true);
-        monsterIdToTradeable[monsterId] = true;
-
-        monsterIdToIVs[monsterId] = IVs;
-
-        monsterAuction.createAuction(monsterId, price, address(this));
-
-
-        gen0CreatedCount++;
-    }
+    
 }
 
 
@@ -1368,6 +1356,15 @@ contract MonsterCreatorInterface is Ownable {
     }
 }
 
+contract GameLogicContract {
+    
+    bool public isGameLogicContract = true;
+    
+    function GameLogicContract() public {
+        
+    }
+}
+
 contract ChainMonstersCore is ChainMonstersAuction, Ownable {
 
 
@@ -1375,6 +1372,8 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
    bool hasLaunched = false;
 
 
+    // this address will hold future gamelogic in place
+    address gameContract;
     
 
     function ChainMonstersCore() public {
@@ -1388,6 +1387,34 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     
 
         
+    }
+    
+    // we don't know the exact interfaces yet so use the lockedMonsterStats value to determine if the game is "ready"
+    // see WhitePaper for explaination for our upgrade and development roadmap
+    function setGameLogicContract(address _candidateContract) external onlyOwner {
+        require(monsterCreator.lockedMonsterStatsCount() == 151);
+        
+        require(GameLogicContract(_candidateContract).isGameLogicContract());
+        gameContract = _candidateContract;
+    }
+
+    // only callable by gameContract after the full game is launched
+    // since all additional monsters after the promo/gen0 ones need to use this coreContract
+    // contract as well we have to prepare this core for our future updates where
+    // players can freely roam the world and hunt ChainMonsters thus generating more
+    function spawnMonster(uint256 _mId, address _owner) external {
+         
+        require(msg.sender == gameContract);
+        
+        uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
+        uint8[7] memory IVs = uint8[7](monsterCreator.getMonsterIVs());
+        
+        // important to note that the IV generators do not use Gen0 methods and are Generation 1 
+        // this means there won't be more than the 10,000 Gen0 monsters sold during the development through the marketplace
+        uint256 monsterId = _createMonster(1, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], _owner, _mId, true);
+        monsterIdToTradeable[monsterId] = true;
+
+        monsterIdToIVs[monsterId] = IVs;
     }
     
     
