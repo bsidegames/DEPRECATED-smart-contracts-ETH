@@ -342,6 +342,7 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
                 owner: address(_owner)
                 
             });
+            addressToTrainer[_owner] = _trainer;
             
             // starter stats are hardcoded!
             if (_starterId == 1) {
