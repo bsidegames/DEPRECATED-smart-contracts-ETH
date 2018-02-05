@@ -1389,6 +1389,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     // this address will hold future gamelogic in place
     address gameContract;
 
+    // this contract 
     address omegaContract;
     
 
@@ -1415,9 +1416,17 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     }
 
 
-    function setOmegaContract(address_candidateContract) external onlyOwner {
+    function setOmegaContract(address _candidateContract) external onlyOwner {
         require(OmegaContract(_candidateContract).isOmegaContract());
         omegaContract = _candidateContract;
+    }
+
+
+    // omega takes care of all neccessary checks so assume that this is correct(!)
+    function evolveMonster(uint256 _tokenId, uint256 _toMonsterId) external {
+        require(msg.sender == omegaContract);
+
+        // do magic stats change
     }
 
     // only callable by gameContract after the full game is launched
