@@ -110,26 +110,18 @@ contract MonstersData {
         // generation number
         // gen0 is the very first generation - the later monster spawn the less likely they are to have
         // special attributes and stats
-       // uint16 generation;
-
-        uint16 hp; // health points 
-        uint16 attack; // attack points
-        uint16 defense; // defense points
-        uint16 spAttack; // special attack
-        uint16 spDefense; // special defense
-        uint16 speed; // speed responsible of who attacks first(!)
-        
-
-        uint16 typeOne;
-        uint16 typeTwo;
+        uint16 generation;
 
         uint16 mID; // this id (from 1 to 151) is responsible for everything visually like showing the real deal!
         bool tradeable;
-        //uint16 uID; // unique id
         
-        // These attributes are handled by mappings since they would overflow the maximum stack
-        //bool female
-        // string nickname
+        // breeding
+        bool female;
+
+        // is this monster exceptionally rare?
+        bool shiny;
+        
+        
         
 
     }
@@ -275,17 +267,11 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
 
     function _createMonster(
         uint256 _generation,
-        uint256 _hp,
-        uint256 _attack,
-        uint256 _defense,
-        uint256 _spAttack,
-        uint256 _spDefense,
-        uint256 _speed,
-        uint256 _typeOne,
-        uint256 _typeTwo,
         address _owner,
         uint256 _mID,
-        bool tradeable
+        bool _tradeable,
+        bool _female,
+        bool _shiny
         
     )
         internal
@@ -294,24 +280,21 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
            
 
             Monster memory _monster = Monster({
+                generation: uint16(_generation),
                 birthTime: uint64(now),
-                hp: uint16(_hp),
-                attack: uint16(_attack),
-                defense: uint16(_defense),
-                spAttack: uint16(_spAttack),
-                spDefense: uint16(_spDefense),
-                speed: uint16(_speed),
-                typeOne: uint16(_typeOne),
-                typeTwo: uint16(_typeTwo),
                 mID: uint16(_mID),
-                tradeable: tradeable
+                tradeable: _tradeable,
+                female: _female,
+                shiny: _shiny
+                
+
                 
 
 
             });
             uint256 newMonsterId = monsters.push(_monster) - 1;
-            monsterIdToTradeable[newMonsterId] = tradeable;
-            monsterIdToGeneration[newMonsterId] = _generation;
+            //monsterIdToTradeable[newMonsterId] = _tradeable;
+            //monsterIdToGeneration[newMonsterId] = _generation;
            
 
             require(newMonsterId == uint256(uint32(newMonsterId)));
@@ -344,18 +327,21 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
             });
             addressToTrainer[_owner] = _trainer;
             
+            bool gender = monsterCreator.getMonsterGender();
+            
             // starter stats are hardcoded!
             if (_starterId == 1) {
-                uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(1));
-                mon = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], _owner, 1, false);
+                //uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(1));
+                
+                mon = _createMonster(0, _owner, 1, false, gender, false);
                
             } else if (_starterId == 2) {
-                uint8[8] memory Stats2 = uint8[8](monsterCreator.getMonsterStats(4));
-                mon = _createMonster(0, Stats2[0], Stats2[1], Stats2[2], Stats2[3], Stats2[4], Stats2[5], Stats2[6], Stats2[7], _owner, 4, false);
+                //uint8[8] memory Stats2 = uint8[8](monsterCreator.getMonsterStats(4));
+                mon = _createMonster(0, _owner, 4, false, gender, false);
                 
             } else if (_starterId == 3) {
-                uint8[8] memory Stats3 = uint8[8](monsterCreator.getMonsterStats(7));
-                mon = _createMonster(0, Stats3[0], Stats3[1], Stats3[2], Stats3[3], Stats3[4], Stats3[5], Stats3[6], Stats3[7], _owner, 7, false);
+                //uint8[8] memory Stats3 = uint8[8](monsterCreator.getMonsterStats(7));
+                mon = _createMonster(0, _owner, 7, false, gender, false);
                 
             }
             
@@ -1009,7 +995,9 @@ contract ChainMonstersAuction is MonsterOwnership {
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
         uint8[7] memory IVs = uint8[7](monsterCreator.getGen0IVs());
         
-        uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], _owner, _mId, true);
+        bool gender = monsterCreator.getMonsterGender();
+        
+        uint256 monsterId = _createMonster(0, _owner, _mId, true, gender, false);
         monsterIdToTradeable[monsterId] = true;
 
         monsterIdToIVs[monsterId] = IVs;
@@ -1025,7 +1013,10 @@ contract ChainMonstersAuction is MonsterOwnership {
 
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
         uint8[7] memory IVs = uint8[7](monsterCreator.getGen0IVs());
-        uint256 monsterId = _createMonster(0, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], this, _mId, true);
+        
+        bool gender = monsterCreator.getMonsterGender();
+        
+        uint256 monsterId = _createMonster(0, this, _mId, true, gender, false);
         monsterIdToTradeable[monsterId] = true;
 
         monsterIdToIVs[monsterId] = IVs;
@@ -1087,7 +1078,7 @@ contract MonsterChampionship is Ownable {
            require(core.monsterIndexToOwner(_tokenId) == msg.sender);
             
            
-           uint myPowerlevel = core.getMonsterPowerLevel(_tokenId);
+           uint myPowerlevel = 10; // todo add calculation method to this contract!
 
            
            // checks if this transaction is useless
@@ -1196,21 +1187,12 @@ contract MonsterCreatorInterface is Ownable {
     uint8 public lockedMonsterStatsCount = 0;
     uint nonce = 0;
 
-    function rand(uint8 min, uint8 max) public returns (uint8) {
-        nonce++;
-        uint8 result = (uint8(sha3(block.blockhash(block.number-1), nonce ))%max);
-        
-        if (result < min)
-        {
-            result = result+min;
-        }
-        return result;
-    }
+    
     
     
 
 
-    function shinyRand(uint16 min, uint16 max) public returns (uint16) {
+    function rand(uint16 min, uint16 max) public returns (uint16) {
         nonce++;
         uint16 result = (uint16(sha3(block.blockhash(block.number-1), nonce ))%max);
         
@@ -1220,6 +1202,11 @@ contract MonsterCreatorInterface is Ownable {
         }
         return result;
     }
+
+    
+
+
+  
     
     
     
@@ -1267,6 +1254,8 @@ contract MonsterCreatorInterface is Ownable {
     
     // this serves as a lookup for new monsters to be generated since all monsters 
     // of the same id share the base stats
+    // also makes it possible to only store the monsterId on core and change this one
+    // during evolution process to save gas and additional transactions
     function getMonsterStats( uint256 _mID) external constant returns(uint8[8] stats) {
            stats[0] = baseStats[_mID][0];
            stats[1] = baseStats[_mID][1];
@@ -1281,12 +1270,24 @@ contract MonsterCreatorInterface is Ownable {
 
         }
 
+    function getMonsterGender () external returns(bool female) {
+
+
+    
+        uint16 femaleChance = rand(0, 100);
+
+        if (femaleChance >= 50) {
+            female = true;
+        }
+        
+    }
+
         // generates randomized IVs for a new monster
         function getMonsterIVs() external returns(uint8[7] ivs) {
 
             bool shiny = false;
 
-            uint16 chance = shinyRand(1, 8192);
+            uint16 chance = rand(1, 8192);
 
             if (chance == 42) {
                 shiny = true;
@@ -1324,7 +1325,7 @@ contract MonsterCreatorInterface is Ownable {
             
             bool shiny = false;
 
-            uint16 chance = shinyRand(1, 4096);
+            uint16 chance = rand(1, 4096);
 
             if (chance == 42) {
                 shiny = true;
@@ -1425,8 +1426,9 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     // omega takes care of all neccessary checks so assume that this is correct(!)
     function evolveMonster(uint256 _tokenId, uint256 _toMonsterId) external {
         require(msg.sender == omegaContract);
-
+        
         // do magic stats change
+
     }
 
     // only callable by gameContract after the full game is launched
@@ -1439,10 +1441,13 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         
         uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
         uint8[7] memory IVs = uint8[7](monsterCreator.getMonsterIVs());
+            
+        // 
+        bool gender = monsterCreator.getMonsterGender();
         
         // important to note that the IV generators do not use Gen0 methods and are Generation 1 
         // this means there won't be more than the 10,000 Gen0 monsters sold during the development through the marketplace
-        uint256 monsterId = _createMonster(1, Stats[0], Stats[1], Stats[2], Stats[3], Stats[4], Stats[5], Stats[6], Stats[7], _owner, _mId, true);
+        uint256 monsterId = _createMonster(1, _owner, _mId, false, gender, false);
         monsterIdToTradeable[monsterId] = true;
 
         monsterIdToIVs[monsterId] = IVs;
@@ -1513,34 +1518,25 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     function getMonster(uint256 _id) external view returns (
         uint256 birthTime,
         uint256 generation,
-        uint256 hp,
-        uint256 attack,
-        uint256 defense,
-        uint256 spAttack,
-        uint256 spDefense,
-        uint256 speed,
-        uint256 typeOne,
-        uint256 typeTwo,
+        
+        uint8[8] stats,
         
         uint256 mID,
-        bool tradeable, 
+        bool tradeable,
         uint256 uID
         
             
         ) {    
        Monster storage mon = monsters[_id];
         birthTime = uint256(mon.birthTime);
-        generation = 0; // hardcoding due to stack too deep error
-        hp = uint256(mon.hp);
-        attack = uint256(mon.attack);
-        defense = uint256(mon.defense);
-        spAttack = uint256(mon.spAttack);
-        spDefense = uint256(mon.spDefense);
-        speed = uint256(mon.speed);
-        typeOne = uint256(mon.typeOne);
-        typeTwo = uint256(mon.typeTwo);
+        generation = mon.generation; // hardcoding due to stack too deep error
         mID = uint256(mon.mID);
         tradeable = bool(mon.tradeable);
+        
+        // these values are retrieved from monsterCreator 
+        stats = uint8[8](monsterCreator.getMonsterStats(uint256(mon.mID)));
+       
+        
         
         // hack to overcome solidity's stack limitation in monster struct....
         uID = _id;
@@ -1549,6 +1545,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         
         // this method only returns the "base" powerlevel of a monster which will be used
         // in more advanced fighting calculations later on
+        /*
     function getMonsterPowerLevel(uint256 _tokenId) external view returns (
             uint256 powerlevel
         ) {
@@ -1558,7 +1555,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
             
             powerlevel = mon.hp + IVs[0] + mon.attack + IVs[1] + mon.defense + IVs[2] + mon.spAttack + IVs[3] + mon.spDefense + IVs[4] + mon.speed + IVs[5];
         }
-        
+        */
         
         
 
