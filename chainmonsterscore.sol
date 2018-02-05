@@ -1465,6 +1465,8 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
 
     function moveToArea(uint16 _newArea) public {
            
+            require(addressToTrainer[msg.sender].currArea > 0);
+
             // never allow anyone to move to area 0 or below since this is used
             // to determine if a trainer profile exists in another method!
             require(_newArea > 0);
