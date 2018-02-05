@@ -1423,11 +1423,19 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     }
 
 
-    // omega takes care of all neccessary checks so assume that this is correct(!)
+    // omega contract takes care of all neccessary checks so assume that this is correct(!)
     function evolveMonster(uint256 _tokenId, uint256 _toMonsterId) external {
         require(msg.sender == omegaContract);
         
-        // do magic stats change
+
+        // retrieve current monster struct
+        Monster storage mon = monsters[_tokenId];
+
+        // evolving only changes monster ID since this is responsible for base Stats  
+        // an evolved monster keeps its gender, generation, IVs and EVs
+        mon.mID = uint16(_toMonsterId);
+
+        
 
     }
 
