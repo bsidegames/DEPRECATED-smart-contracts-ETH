@@ -1370,6 +1370,15 @@ contract GameLogicContract {
     }
 }
 
+
+contract OmegaContract {
+    bool public isOmegaContract = true;
+
+    function OmegaContract() public {
+
+    }
+}
+
 contract ChainMonstersCore is ChainMonstersAuction, Ownable {
 
 
@@ -1379,6 +1388,8 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
 
     // this address will hold future gamelogic in place
     address gameContract;
+
+    address omegaContract;
     
 
     function ChainMonstersCore() public {
@@ -1401,6 +1412,12 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         
         require(GameLogicContract(_candidateContract).isGameLogicContract());
         gameContract = _candidateContract;
+    }
+
+
+    function setOmegaContract(address_candidateContract) external onlyOwner {
+        require(OmegaContract(_candidateContract).isOmegaContract());
+        omegaContract = _candidateContract;
     }
 
     // only callable by gameContract after the full game is launched
