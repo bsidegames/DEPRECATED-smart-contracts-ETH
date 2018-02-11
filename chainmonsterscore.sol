@@ -289,6 +289,10 @@ contract MonsterOwnership is MonstersBase, ERC721 {
         return owner;
     }
     
+    function _approve(uint256 _tokenId, address _approved) internal {
+        monsterIndexToApproved[_tokenId] = _approved;
+    }
+
     function countOfDeeds() external view returns (uint256 _count) {
         return totalSupply();
     }
@@ -598,7 +602,9 @@ contract ChainMonstersAuction is MonsterOwnership {
 
         uint256 monsterId = _createMonster(0, this, _mId, true, gender, false);
         monsterIdToTradeable[monsterId] = true;
-
+        
+        _approve(monsterId, monsterAuction);
+      
         monsterIdToIVs[monsterId] = ivs;
 
         monsterAuction.createAuction(monsterId, price, address(this));
