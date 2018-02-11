@@ -125,9 +125,9 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
         areas.push(areaIndex);
     }
 
-    function _createMonster(
-        uint256 _generation, address _owner, uint256 _mID, bool _tradeable, bool _female,
-            bool _shiny) internal returns (uint) {
+    function _createMonster(uint256 _generation, address _owner, uint256 _mID, bool _tradeable,
+        bool _female, bool _shiny) internal returns (uint)
+    {
 
         Monster memory _monster = Monster({
             generation: uint16(_generation),
@@ -447,11 +447,6 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
     bool public isMonsterAuction = true;
     uint256 public auctionIndex = 0;
 
-    /// @dev The ERC-165 interface signature for ERC-721.
-    ///  Ref: https://github.com/ethereum/EIPs/issues/165
-    ///  Ref: https://github.com/ethereum/EIPs/issues/721
-    bytes4 constant InterfaceSignature_ERC721 = bytes4(0x9a20483d);
-
     function MonsterAuction(address _nftAddress, uint256 _cut) public {
         require(_cut <= 10000);
         ownerCut = _cut;
@@ -584,29 +579,27 @@ contract ChainMonstersAuction is MonsterOwnership {
 
         promoCreatedCount++;
 
-        uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[7] memory IVs = uint8[7](monsterCreator.getGen0IVs());
+        uint8[7] memory ivs = uint8[7](monsterCreator.getGen0IVs());
 
         bool gender = monsterCreator.getMonsterGender();
 
         uint256 monsterId = _createMonster(0, _owner, _mId, true, gender, false);
         monsterIdToTradeable[monsterId] = true;
 
-        monsterIdToIVs[monsterId] = IVs;
+        monsterIdToIVs[monsterId] = ivs;
     }
 
     function createGen0Auction(uint256 _mId, uint256 price) external onlyAdmin {
         require(gen0CreatedCount < GEN0_CREATION_LIMIT);
 
-        uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[7] memory IVs = uint8[7](monsterCreator.getGen0IVs());
+        uint8[7] memory ivs = uint8[7](monsterCreator.getGen0IVs());
 
         bool gender = monsterCreator.getMonsterGender();
 
         uint256 monsterId = _createMonster(0, this, _mId, true, gender, false);
         monsterIdToTradeable[monsterId] = true;
 
-        monsterIdToIVs[monsterId] = IVs;
+        monsterIdToIVs[monsterId] = ivs;
 
         monsterAuction.createAuction(monsterId, price, address(this));
 
@@ -659,7 +652,7 @@ contract MonsterChampionship is Ownable {
 
         uint myRank = 0;
 
-        for (uint i=0; i<=maxIndex; i++) {
+        for (uint i = 0; i <= maxIndex; i++) {
             if (myPowerlevel > addressToPowerlevel[topTen[i]]) {
                 // you have beaten this one so increase temporary rank
                 myRank = i;
@@ -675,7 +668,7 @@ contract MonsterChampionship is Ownable {
         address[10] storage newTopTen = topTen;
 
         if (currChampion == msg.sender) {
-            for (uint j=0; j<maxIndex; j++) {
+            for (uint j = 0; j < maxIndex; j++) {
                 // remove ourselves from this list in case
                 if (newTopTen[j] == msg.sender) {
                     newTopTen[j] = 0x0;
@@ -684,7 +677,7 @@ contract MonsterChampionship is Ownable {
             }
         }
 
-        for (uint x=0; x<=myRank; x++) {
+        for (uint x = 0; x <= myRank; x++) {
             if (x == myRank) {
                 newTopTen[x] = msg.sender;
             } else {
@@ -796,7 +789,7 @@ contract MonsterCreatorInterface is Ownable {
 
         // IVs range between 0 and 31
         // stat range modified for shiny monsters!
-        if (shiny == true) {
+        if (shiny) {
             ivs[0] = uint8(rand(10, 31));
             ivs[1] = uint8(rand(10, 31));
             ivs[2] = uint8(rand(10, 31));
@@ -892,6 +885,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         require(monsterCreator.lockedMonsterStatsCount() == 151);
 
         require(GameLogicContract(_candidateContract).isGameLogicContract());
+
         gameContract = _candidateContract;
     }
 
@@ -919,8 +913,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     function spawnMonster(uint256 _mId, address _owner) external {
         require(msg.sender == gameContract);
 
-        uint8[8] memory Stats = uint8[8](monsterCreator.getMonsterStats(uint256(_mId)));
-        uint8[7] memory IVs = uint8[7](monsterCreator.getMonsterIVs());
+        uint8[7] memory ivs = uint8[7](monsterCreator.getMonsterIVs());
 
         bool gender = monsterCreator.getMonsterGender();
 
@@ -929,7 +922,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         uint256 monsterId = _createMonster(1, _owner, _mId, false, gender, false);
         monsterIdToTradeable[monsterId] = true;
 
-        monsterIdToIVs[monsterId] = IVs;
+        monsterIdToIVs[monsterId] = ivs;
     }
 
     // used to add playable content to the game
@@ -947,14 +940,12 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
         require(addressToTrainer[msg.sender].owner == 0);
 
         // valid input check
-        require(_starterId == 1 || _starterId == 2 || _starterId == 3 );
+        require(_starterId == 1 || _starterId == 2 || _starterId == 3);
 
         uint256 mon = _createTrainer(_username, _starterId, msg.sender);
 
         // due to stack limitations we have to assign the IVs here:
-        uint8[7] memory IVs = uint8[7](monsterCreator.getMonsterIVs());
-
-        monsterIdToIVs[mon] = IVs;
+        monsterIdToIVs[mon] = monsterCreator.getMonsterIVs();
     }
 
     function changeUsername(string _name) public {
@@ -986,7 +977,9 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
 
     // to be changed to retrieve current stats!
     function getMonster(uint256 _id) external view returns (
-            uint256 birthTime, uint256 generation, uint8[8] stats, uint256 mID, bool tradeable, uint256 uID) {
+        uint256 birthTime, uint256 generation, uint8[8] stats,
+        uint256 mID, bool tradeable, uint256 uID)
+    {
         Monster storage mon = monsters[_id];
         birthTime = uint256(mon.birthTime);
         generation = mon.generation; // hardcoding due to stack too deep error
