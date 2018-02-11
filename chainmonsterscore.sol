@@ -234,6 +234,8 @@ contract MonsterOwnership is MonstersBase, ERC721 {
         // Check for approval and valid ownership
         //require(_approvedFor(msg.sender, _tokenId));
         require(_owns(_from, _tokenId));
+        // checks if _to was aproved
+        require(_approvedFor(_to, _tokenId));
 
         // Reassign ownership (also clears pending approvals and emits Transfer event).
         _transfer(_from, _to, _tokenId);
