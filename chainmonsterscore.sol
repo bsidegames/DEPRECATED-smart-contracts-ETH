@@ -204,7 +204,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
         return monsterIndexToOwner[_tokenId] == _claimant;
     }
 
-    function _isTradeable(uint256 _tokenId) external view returns (bool) {
+    function _isTradeable(uint256 _tokenId) public view returns (bool) {
         return monsterIdToTradeable[_tokenId];
     }
 
@@ -215,60 +215,15 @@ contract MonsterOwnership is MonstersBase, ERC721 {
         return monsterIndexToApproved[_tokenId] == _claimant;
     }
 
-    /// @dev Marks an address as being approved for transferFrom(), overwriting any previous
-    ///  approval. Setting _approved to address(0) clears all transfer approval.
-    ///  NOTE: _approve() does NOT send the Approval event. This is intentional because
-    ///  _approve() and transferFrom() are used together for putting monsters on auction, and
-    ///  there is no value in spamming the log with Approval events in that case.
-    function _approve(uint256 _tokenId, address _approved) internal {
-        monsterIndexToApproved[_tokenId] = _approved;
-    }
-
     function balanceOf(address _owner) public view returns (uint256 count) {
         return ownershipTokenCount[_owner];
     }
 
-    function transfer (address _to, uint256 _tokenId) external {
-        require(monsterIdToTradeable[_tokenId]);
-        // Safety check to prevent against an unexpected 0x0 default.
-        require(_to != address(0));
-        // Disallow transfers to this contract to prevent accidental misuse.
-        // The contract should never own any monsters (except very briefly
-        // after a gen0 monster is created and before it goes on auction).
-        require(_to != address(this));
-
-        // You can only send your own monster.
-        require(_owns(msg.sender, _tokenId));
-
-        // Reassign ownership, clear pending approvals, emit Transfer event.
-        _transfer(msg.sender, _to, _tokenId);
+    function transfer(address _to, uint256 _tokenId) public payable {
+        transferFrom(msg.sender, _to, _tokenId);
     }
 
-    /// @notice Grant another address the right to transfer a specific monster via
-    ///  transferFrom(). This is the preferred flow for transfering NFTs to contracts.
-    /// @param _to The address to be granted transfer approval. Pass address(0) to
-    ///  clear all approvals.
-    /// @param _tokenId The ID of the monster that can be transferred if this call succeeds.
-    /// @dev Required for ERC-721 compliance.
-    function approve(address _to, uint256 _tokenId ) external {
-        // Only an owner can grant transfer approval.
-        require(_owns(msg.sender, _tokenId));
-
-        // Register the approval (replacing any previous approval).
-        _approve(_tokenId, _to);
-
-        // Emit approval event.
-        Approval(msg.sender, _to, _tokenId);
-    }
-
-    /// @notice Transfer a monster owned by another address, for which the calling address
-    ///  has previously been granted transfer approval by the owner.
-    /// @param _from The address that owns the monster to be transfered.
-    /// @param _to The address that should take ownership of the monster. Can be any address,
-    ///  including the caller.
-    /// @param _tokenId The ID of the monster to be transferred.
-    /// @dev Required for ERC-721 compliance.
-    function transferFrom(address _from, address _to, uint256 _tokenId) external {
+    function transferFrom(address _from, address _to, uint256 _tokenId) public payable {
         require(monsterIdToTradeable[_tokenId]);
         // Safety check to prevent against an unexpected 0x0 default.
         require(_to != address(0));
@@ -288,13 +243,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
         return monsters.length;
     }
 
-    function ownerOf(uint256 _tokenId) external view returns (address owner) {
-        owner = monsterIndexToOwner[_tokenId];
-
-        require(owner != address(0));
-    }
-
-     function tokensOfOwner(address _owner) external view returns(uint256[] ownerTokens) {
+    function tokensOfOwner(address _owner) public view returns (uint256[] ownerTokens) {
         uint256 tokenCount = balanceOf(_owner);
 
         if (tokenCount > 0) {
@@ -316,12 +265,61 @@ contract MonsterOwnership is MonstersBase, ERC721 {
 
         return new uint256[](0);
     }
+
+    bytes4 internal constant INTERFACE_SIGNATURE_ERC165 =
+        bytes4(keccak256("supportsInterface(bytes4)"));
+
+    bytes4 internal constant INTERFACE_SIGNATURE_ERC721 =
+        bytes4(keccak256("ownerOf(uint256)")) ^
+        bytes4(keccak256("countOfDeeds()")) ^
+        bytes4(keccak256("countOfDeedsByOwner(address)")) ^
+        bytes4(keccak256("deedOfOwnerByIndex(address,uint256)")) ^
+        bytes4(keccak256("approve(address,uint256)")) ^
+        bytes4(keccak256("takeOwnership(uint256)"));
+
+    function supportsInterface(bytes4 _interfaceID) external pure returns (bool) {
+        return _interfaceID == INTERFACE_SIGNATURE_ERC165 || _interfaceID == INTERFACE_SIGNATURE_ERC721;
+    }
+
+    function ownerOf(uint256 _deedId) external view returns (address _owner) {
+        var owner = monsterIndexToOwner[_deedId];
+        require(owner != address(0));
+        return owner;
+    }
+
+    function countOfDeeds() external view returns (uint256 _count) {
+        return totalSupply();
+    }
+
+    function countOfDeedsByOwner(address _owner) external view returns (uint256 _count) {
+        var arr = tokensOfOwner(_owner);
+        return arr.length;
+    }
+
+    function deedOfOwnerByIndex(address _owner, uint256 _index) external view returns (uint256 _deedId) {
+        return tokensOfOwner(_owner)[_index];
+    }
+
+    function approve(address _to, uint256 _tokenId) external payable {
+        // Only an owner can grant transfer approval.
+        require(_owns(msg.sender, _tokenId));
+
+        // Register the approval (replacing any previous approval).
+        monsterIndexToApproved[_tokenId] = _to;
+
+        // Emit approval event.
+        Approval(msg.sender, _to, _tokenId);
+    }
+
+    function takeOwnership(uint256 _deedId) external payable {
+        transferFrom(this.ownerOf(_deedId), msg.sender, _deedId);
+    }
 }
 
 contract MonsterAuctionBase {
 
     // Reference to contract tracking NFT ownership
-    ERC721 public nonFungibleContract;
+    MonsterOwnership public nonFungibleContract;
     ChainMonstersCore public core;
 
     struct Auction {
@@ -451,7 +449,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
         require(_cut <= 10000);
         ownerCut = _cut;
 
-        ERC721 candidateContract = ERC721(_nftAddress);
+        var candidateContract = MonsterOwnership(_nftAddress);
 
         nonFungibleContract = candidateContract;
         ChainMonstersCore candidateCoreContract = ChainMonstersCore(_nftAddress);
@@ -895,7 +893,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
     }
 
     // omega contract takes care of all neccessary checks so assume that this is correct(!)
-    function evolveMonster(uint256 _tokenId, uint256 _toMonsterId) external {
+    function evolveMonster(uint256 _tokenId, uint16 _toMonsterId) external {
         require(msg.sender == omegaContract);
 
         // retrieve current monster struct
@@ -903,7 +901,7 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
 
         // evolving only changes monster ID since this is responsible for base Stats
         // an evolved monster keeps its gender, generation, IVs and EVs
-        mon.mID = uint16(_toMonsterId);
+        mon.mID = _toMonsterId;
     }
 
     // only callable by gameContract after the full game is launched
