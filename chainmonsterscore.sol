@@ -288,7 +288,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
         require(owner != address(0));
         return owner;
     }
-
+    
     function countOfDeeds() external view returns (uint256 _count) {
         return totalSupply();
     }
@@ -477,7 +477,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
         uint256 balance = this.balance;
         owner.transfer(balance);
     }
-
+    
     function tokensInAuctionsOfOwner(address _owner) external view returns(uint256[] auctionTokens) {
         uint256 numAuctions = ownershipAuctionCount[_owner];
 
