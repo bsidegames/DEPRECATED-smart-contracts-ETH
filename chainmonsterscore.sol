@@ -288,7 +288,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
         require(owner != address(0));
         return owner;
     }
-    
+
     function _approve(uint256 _tokenId, address _approved) internal {
         monsterIndexToApproved[_tokenId] = _approved;
     }
@@ -322,7 +322,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
     }
 }
 
-contract MonsterAuctionBase {
+contract MonsterAuctionBase is MonsterOwnership {
 
     // Reference to contract tracking NFT ownership
     MonsterOwnership public nonFungibleContract;
@@ -481,7 +481,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
         uint256 balance = this.balance;
         owner.transfer(balance);
     }
-    
+
     function tokensInAuctionsOfOwner(address _owner) external view returns(uint256[] auctionTokens) {
         uint256 numAuctions = ownershipAuctionCount[_owner];
 
@@ -506,6 +506,8 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
         require(_price == uint256(_price));
         require(core._isTradeable(_tokenId));
         require(_owns(msg.sender, _tokenId));
+
+        _approve(_tokenId, address(this));
         _escrow(msg.sender, _tokenId);
 
         Auction memory auction = Auction(
@@ -602,9 +604,9 @@ contract ChainMonstersAuction is MonsterOwnership {
 
         uint256 monsterId = _createMonster(0, this, _mId, true, gender, false);
         monsterIdToTradeable[monsterId] = true;
-        
+
         _approve(monsterId, monsterAuction);
-      
+
         monsterIdToIVs[monsterId] = ivs;
 
         monsterAuction.createAuction(monsterId, price, address(this));
