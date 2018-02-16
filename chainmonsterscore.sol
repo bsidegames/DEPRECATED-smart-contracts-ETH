@@ -162,7 +162,7 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
 
         bool gender = monsterCreator.getMonsterGender();
 
-        // starter stats are hardcoded
+        // starters cannot be traded and are not shiny
         if (_starterId == 1) {
             mon = _createMonster(0, _owner, 1, false, gender, false);
         } else if (_starterId == 2) {
@@ -232,10 +232,10 @@ contract MonsterOwnership is MonstersBase, ERC721 {
         // after a gen0 monster is created and before it goes on auction).
         require(_to != address(this));
         // Check for approval and valid ownership
-        //require(_approvedFor(msg.sender, _tokenId));
+        
         require(_owns(_from, _tokenId));
         // checks if _to was aproved
-        require(_from == msg.sender || _approvedFor(_to, _tokenId));
+        require(_from == msg.sender || msg.sender == address(monsterAuction) || _approvedFor(_to, _tokenId));
 
         // Reassign ownership (also clears pending approvals and emits Transfer event).
         _transfer(_from, _to, _tokenId);
@@ -322,7 +322,7 @@ contract MonsterOwnership is MonstersBase, ERC721 {
     }
 }
 
-contract MonsterAuctionBase is MonsterOwnership {
+contract MonsterAuctionBase {
 
     // Reference to contract tracking NFT ownership
     MonsterOwnership public nonFungibleContract;
@@ -507,7 +507,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
         require(core._isTradeable(_tokenId));
         require(_owns(msg.sender, _tokenId));
 
-        _approve(_tokenId, address(this));
+        
         _escrow(msg.sender, _tokenId);
 
         Auction memory auction = Auction(
@@ -588,8 +588,12 @@ contract ChainMonstersAuction is MonsterOwnership {
         uint8[7] memory ivs = uint8[7](monsterCreator.getGen0IVs());
 
         bool gender = monsterCreator.getMonsterGender();
-
-        uint256 monsterId = _createMonster(0, _owner, _mId, true, gender, false);
+        
+        bool shiny = false;
+        if (ivs[6] == 1) {
+            shiny = true;
+        }
+        uint256 monsterId = _createMonster(0, _owner, _mId, true, gender, shiny);
         monsterIdToTradeable[monsterId] = true;
 
         monsterIdToIVs[monsterId] = ivs;
@@ -601,8 +605,13 @@ contract ChainMonstersAuction is MonsterOwnership {
         uint8[7] memory ivs = uint8[7](monsterCreator.getGen0IVs());
 
         bool gender = monsterCreator.getMonsterGender();
-
-        uint256 monsterId = _createMonster(0, this, _mId, true, gender, false);
+        
+        bool shiny = false;
+        if (ivs[6] == 1) {
+            shiny = true;
+        }
+        
+        uint256 monsterId = _createMonster(0, this, _mId, true, gender, shiny);
         monsterIdToTradeable[monsterId] = true;
 
         _approve(monsterId, monsterAuction);
@@ -925,9 +934,14 @@ contract ChainMonstersCore is ChainMonstersAuction, Ownable {
 
         bool gender = monsterCreator.getMonsterGender();
 
+        bool shiny = false;
+        if (ivs[6] == 1) {
+            shiny = true;
+        }
+        
         // important to note that the IV generators do not use Gen0 methods and are Generation 1
         // this means there won't be more than the 10,000 Gen0 monsters sold during the development through the marketplace
-        uint256 monsterId = _createMonster(1, _owner, _mId, false, gender, false);
+        uint256 monsterId = _createMonster(1, _owner, _mId, false, gender, shiny);
         monsterIdToTradeable[monsterId] = true;
 
         monsterIdToIVs[monsterId] = ivs;
