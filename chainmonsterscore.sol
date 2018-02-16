@@ -116,7 +116,7 @@ contract MonstersBase is MonsterAccessControl, MonstersData {
     mapping (uint256 => string) public monsterIdToNickname;
     mapping (uint256 => bool) public monsterIdToTradeable;
     mapping (uint256 => uint256) public monsterIdToGeneration;
-    mapping (uint256 => MonsterBaseStats) public baseStats;
+    
     mapping (uint256 => uint8[7]) public monsterIdToIVs;
 
     // adds new area to world
@@ -503,6 +503,7 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
     }
 
     function createAuction(uint256 _tokenId, uint256 _price, address _seller) external {
+        require(_seller != address(0));
         require(_price == uint256(_price));
         require(core._isTradeable(_tokenId));
         require(_owns(msg.sender, _tokenId));
@@ -580,7 +581,10 @@ contract ChainMonstersAuction is MonsterOwnership {
         // during generation we have to keep in mind that we have only 10,000 tokens available
         // which have to be divided by 151 monsters, some rarer than others
         // see WhitePaper for gen0/promo monster plan
-
+        
+        // sanity check that this monster ID is actually in game yet
+        require(monsterCreator.baseStats(_mId, 1) > 0);
+        
         require(promoCreatedCount < PROMO_CREATION_LIMIT);
 
         promoCreatedCount++;
@@ -600,6 +604,9 @@ contract ChainMonstersAuction is MonsterOwnership {
     }
 
     function createGen0Auction(uint256 _mId, uint256 price) external onlyAdmin {
+         // sanity check that this monster ID is actually in game yet
+        require(monsterCreator.baseStats(_mId, 1) > 0);
+        
         require(gen0CreatedCount < GEN0_CREATION_LIMIT);
 
         uint8[7] memory ivs = uint8[7](monsterCreator.getGen0IVs());
