@@ -53,13 +53,6 @@ contract MonstersData {
         uint16 speed;
     }
 
-    // lomonsterion struct used for travelling around the "world"
-    struct Area {
-        // areaID used in-engine to determine world position
-        // minimum level to enter this area...
-        uint16 minLevel;
-    }
-
     struct Trainer {
         // timestamp of block when this player/trainer was created
         uint64 birthTime;
