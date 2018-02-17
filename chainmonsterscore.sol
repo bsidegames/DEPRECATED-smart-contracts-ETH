@@ -554,12 +554,16 @@ contract MonsterAuction is  MonsterAuctionBase, Ownable {
 }
 
 contract ChainMonstersAuction is MonsterOwnership {
+    bool lockedMonsterAuction = false;
+
     function setMonsterAuctionAddress(address _address) external onlyAdmin {
+        require(!lockedMonsterAuction);
         MonsterAuction candidateContract = MonsterAuction(_address);
 
         require(candidateContract.isMonsterAuction());
 
         monsterAuction = candidateContract;
+        lockedMonsterAuction = true;
     }
 
     uint256 public constant PROMO_CREATION_LIMIT = 5000;
