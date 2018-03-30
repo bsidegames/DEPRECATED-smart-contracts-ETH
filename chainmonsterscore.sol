@@ -646,12 +646,12 @@ contract MonsterChampionship is Ownable {
 
     mapping (address => uint256) public addressToPowerlevel;
     mapping (uint256 => address) public rankToAddress;
-
+    
     // try to beat every other player in the top10 with your strongest monster!
     // effectively looping through all top10 players, beating them one by one
     // and if strong enough placing your in the top10 as well
     function contestChampion(uint256 _tokenId) external {
-        uint maxIndex = 9;
+        //uint maxIndex = 9;
 
         // fail tx if player is already champion!
         // in theory players could increase their powerlevel by contesting themselves but
@@ -664,7 +664,13 @@ contract MonsterChampionship is Ownable {
         require(core.isTrainer(msg.sender));
         require(core.monsterIndexToOwner(_tokenId) == msg.sender);
 
-        uint myPowerlevel = 10; // todo add calculation method to this contract!
+       
+        
+        var (n, m, stats, l, k, d) =  core.getMonster(_tokenId);
+        //uint8[7] ivs = core.monsterIdToIVs(_tokenId);
+        
+        uint256 myPowerlevel = uint256(stats[0]) + uint256(stats[1]) + uint256(stats[2]) + uint256(stats[3]) + uint256(stats[4]) + uint256(stats[5]);
+        
 
         // checks if this transaction is useless
         // since we can't fight against ourself!
@@ -673,12 +679,12 @@ contract MonsterChampionship is Ownable {
 
         uint myRank = 0;
 
-        for (uint i = 0; i <= maxIndex; i++) {
+        for (uint i = 0; i <= 9; i++) {
             if (myPowerlevel > addressToPowerlevel[topTen[i]]) {
                 // you have beaten this one so increase temporary rank
                 myRank = i;
 
-                if (myRank == maxIndex) {
+                if (myRank == 9) {
                     currChampion = msg.sender;
                 }
             }
@@ -689,7 +695,7 @@ contract MonsterChampionship is Ownable {
         address[10] storage newTopTen = topTen;
 
         if (currChampion == msg.sender) {
-            for (uint j = 0; j < maxIndex; j++) {
+            for (uint j = 0; j < 9; j++) {
                 // remove ourselves from this list in case
                 if (newTopTen[j] == msg.sender) {
                     newTopTen[j] = 0x0;
@@ -702,7 +708,7 @@ contract MonsterChampionship is Ownable {
             if (x == myRank) {
                 newTopTen[x] = msg.sender;
             } else {
-                if (x < maxIndex)
+                if (x < 9)
                     newTopTen[x] = topTen[x+1];
             }
         }
