@@ -5,7 +5,7 @@
 // Our Aetherian #0 ownership is now handled by this contract instead of our core. This contract "owns" 
 // the monster and players can bid to get their hands on this mystical creature until someone else outbids them.
 // Every following sale increases the price by x1.5 until no one is willing to outbid the current owner.
-// Once a player has lost his bid, they will get a full refund of his bid + 50% of the revenue created by the sale.
+// Once a player has lost ownership, they will get a full refund of their bid + 50% of the revenue created by the sale.
 // The other 50% go to the dev team to fund development. 
 // This "hot potato" style auction technically never ends and enables some very interesting scenarios
 // for our in-game world
@@ -235,27 +235,7 @@ contract AuctionPotato {
             // set funds to 0
             fundsByBidder[withdrawalAccount] = 0;
         }
-
-        /*
-        if (canceled) {
-            // if the auction was canceled, everyone should simply be allowed to withdraw their funds
-            withdrawalAccount = msg.sender;
-            withdrawalAmount = fundsByBidder[withdrawalAccount];
-            // set funds to 0
-            fundsByBidder[withdrawalAccount] = 0;
-        }
-        
-        // owner can withdraw once auction is cancelled or ended
-        if (ownerHasWithdrawn == false && msg.sender == owner && (canceled == true || now > endTime)) {
-            withdrawalAccount = owner;
-            withdrawalAmount = highestBindingBid.sub(oldPotato);
-            ownerHasWithdrawn = true;
-            
-            // set funds to 0
-            fundsByBidder[withdrawalAccount] = 0;
-        }
-        */
-        
+       
         // overbid people can withdraw their bid + profit
         // exclude owner because he is set above
         if (msg.sender != highestBidder && msg.sender != owner) {
@@ -264,15 +244,6 @@ contract AuctionPotato {
             fundsByBidder[withdrawalAccount] = 0;
         }
         
-        /*
-        // highest bidder can withdraw leftovers if he didn't before
-        if (msg.sender == highestBidder && msg.sender != owner) {
-            withdrawalAccount = msg.sender;
-            withdrawalAmount = fundsByBidder[withdrawalAccount].sub(oldHighestBindingBid);
-            fundsByBidder[withdrawalAccount] = fundsByBidder[withdrawalAccount].sub(withdrawalAmount);
-        }
-        */
-
         if (withdrawalAmount == 0) revert();
     
         // send the funds
