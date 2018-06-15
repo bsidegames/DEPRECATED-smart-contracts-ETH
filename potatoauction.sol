@@ -162,11 +162,19 @@ contract AuctionPotato {
         returns (bool success)
     {   
         // we are only allowing to increase in bidIncrements to make for true hot potato style
-        require(msg.value == highestBindingBid.add(potato));
+        // while still allowing overbid to happen in case some parties are trying to 
+        require(msg.value >= highestBindingBid.add(potato));
         require(msg.sender != highestBidder);
         require(started == true);
         require(blockerPay == false);
         blockerPay = true;
+
+        // if someone overbids, return their
+        if (msg.value > highestBindingBid.add(potato))
+        {
+            uint overbid = msg.value - highestBindingBid.add(potato);
+            msg.sender.transfer(overbid);
+        }
         
         // calculate the user's total bid based on the current amount they've sent to the contract
         // plus whatever has been sent with this transaction
