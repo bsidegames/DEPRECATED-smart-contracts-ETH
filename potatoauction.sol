@@ -181,9 +181,7 @@ contract AuctionPotato {
         
         fundsByBidder[msg.sender] = fundsByBidder[msg.sender].add(highestBindingBid);
         
-        // 40% potato results in ~6% 2/7
-        // 44% potato results in ? 13% 4/9 
-        // 50% potato results in ~16% /2
+        
         oldPotato = potato;
         
         uint potatoShare;
