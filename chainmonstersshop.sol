@@ -101,16 +101,25 @@ contract ChainmonstersShop {
         owner = msg.sender;
 
         started = false;
+        
+        _addPackage(99, "100 Coins", true, 100);
+        _addPackage(549, "550 Coins", true, 550);
+        _addPackage(1099, "1200 Coins", true, 1200);
+        _addPackage(2199, "2500 Coins", true, 2500);
+        _addPackage(4399, "5200 Coins", true, 5200);
+        _addPackage(10999, "14500 Coins", true, 14500);
+        
     }
 
     function startShop() public onlyOwner {
         require(started == false);
-
+        started = true;
     }
 
     // in case of contract switch or adding new packages
     function pauseShop() public onlyOwner {
         require(started == true);
+        started = false;
     }
 
     function isStarted() public view returns (bool success) {
@@ -130,10 +139,9 @@ contract ChainmonstersShop {
             totalCoinsSold += packages[_id].coinsAmount;
             emit LogPurchase(msg.sender, msg.value, packages[_id].packageReference);
         }
-
-    function addPackage(uint256 _price, string _packageReference, bool _isActive, uint256 _coinsAmount)
-        external
-        onlyOwner
+        
+    function _addPackage(uint256 _price, string _packageReference, bool _isActive, uint256 _coinsAmount)
+        internal
         {
             require(_price > 0);
             Package memory _package = Package({
@@ -145,6 +153,20 @@ contract ChainmonstersShop {
 
         uint256 newPackageId = packages.push(_package);
 
+        }
+
+    function addPackage(uint256 _price, string _packageReference, bool _isActive, uint256 _coinsAmount)
+        external
+        onlyOwner
+        {
+            _addPackage(_price, _packageReference, _isActive, _coinsAmount);
+        }
+        
+    function setPackageActive(uint256 _id, bool _active)
+        external
+        onlyOwner
+        {
+            packages[_id].isActive = _active;
         }
 
     function setPrice(uint256 _packageId, uint256 _newPrice)
@@ -212,9 +234,13 @@ contract ChainmonstersShop {
         require(msg.sender == owner);
         _;
     }
-
-
     
-   
-    
+    function withdrawBalance()
+        external 
+        onlyOwner 
+        {
+            uint256 balance = this.balance;
+            owner.transfer(balance);
+        }
+  
 }
