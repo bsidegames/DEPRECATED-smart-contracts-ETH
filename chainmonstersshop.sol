@@ -133,7 +133,7 @@ contract ChainmonstersShop {
             require(started == true);
             require(packages[_id].isActive == true);
             require(msg.sender != owner);
-            require(msg.value == priceOf(packages[_id].price)); // only accept 100% accurate prices
+            require(msg.value == priceOf(_id)); // only accept 100% accurate prices
 
             addressToCoinsPurchased[msg.sender] += packages[_id].coinsAmount;
             totalCoinsSold += packages[_id].coinsAmount;
@@ -180,13 +180,14 @@ contract ChainmonstersShop {
     function getPackage(uint256 _id)
         external 
         view
-        returns (uint256 priceInETH, uint256 priceInUSD, string packageReference, uint256 coinsAmount )
+        returns (uint256 priceInETH, uint256 priceInUSD, string packageReference, uint256 coinsAmount, bool isActive )
         {
             Package storage package = packages[_id];
             priceInETH = priceOf(_id);
             priceInUSD = package.price;
             packageReference = package.packageReference;
             coinsAmount = package.coinsAmount;
+            isActive = package.isActive;
         
         }
 
