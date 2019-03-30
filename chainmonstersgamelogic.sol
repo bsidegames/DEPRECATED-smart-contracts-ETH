@@ -1,62 +1,12 @@
-import "chainmonsterscore.sol";
 
 
 
 
 
+pragma solidity ^0.5.2;
 
+import "browser/chainmonsterscorev2.sol";
 
-
-
-
-
-/**
-* @title SafeMath
-* @dev Math operations with safety checks that throw on error
-*/
-library SafeMath {
-
-    /**
-    * @dev Multiplies two numbers, throws on overflow.
-    */
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-        if (a == 0) {
-            return 0;
-        }
-        uint256 c = a * b;
-        assert(c / a == b);
-        return c;
-    }
-
-    /**
-    * @dev Integer division of two numbers, truncating the quotient.
-    */
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        // assert(b > 0); // Solidity automatically throws when dividing by 0
-        uint256 c = a / b;
-        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-        return c;
-    }
-
-    /**
-    * @dev Substracts two numbers, returns 0 if it would go into minus range.
-    */
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        if (b >= a) {
-            return 0;
-        }
-        return a - b;
-    }
-
-    /**
-    * @dev Adds two numbers, throws on overflow.
-    */
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        assert(c >= a);
-        return c;
-    }
-}
 
 
 
@@ -71,8 +21,11 @@ contract GameLogic {
     uint256 public mintCosts;
     uint256 public mintFee;
 
-    address public backend;
-    ChainMonstersCore public coreContract;
+    address payable public backend;
+    ChainmonstersCoreV2 public coreContract;
+    address public core;
+    
+    bool public isGameLogicContract = true;
 
     address public admin;
 
@@ -81,16 +34,21 @@ contract GameLogic {
     // token = 0 => not requested yet
     // token = 1 => requested
     // token = 2 => minted
-    mapping(uint256 => uint16) tokenToMinted;
+    mapping(uint256 => uint16) public tokenToMinted;
 
 
     // Events
-    event RequestMint(address _from, uint256 _id);
+    event RequestMint(address _from, uint256 _id, uint256 mintFee, uint256 gasFee);
     event MintToken(uint256 _tokenId, address _owner);
 
 
-    constructor() public {
+    constructor(address _core) public {
         owner = msg.sender;
+        admin = msg.sender;
+        backend = msg.sender;
+        core = _core;
+        coreContract = ChainmonstersCoreV2(_core);
+
     }
 
     
@@ -99,21 +57,38 @@ contract GameLogic {
         require(msg.sender == admin);
         require(_gasFee > 0);
         gasCosts = _gasFee;
+        
+        mintFee = mintCosts + gasCosts;
 
 
     }
 
-    function setMintFee(uint256 _mintFee) public {
+    function setMintFee(uint256 _mintFee) external {
         require(msg.sender == admin);
         require(_mintFee > 0);
         mintCosts = _mintFee;
+        mintFee = mintCosts + gasCosts;
 
         
     }
 
-    function setAdmin(address _admin) public {
+    function setAdmin(address _admin) external {
         require(msg.sender == admin);
+        require(_admin == address(_admin));
         admin = _admin;
+    }
+    
+    function setBackend(address payable _backend) external {
+        require(msg.sender == admin);
+        require(_backend == address(_backend));
+        backend = _backend;
+    }
+    
+    function setCoreContract(address _core) external {
+        require(msg.sender == admin);
+        require(_core == address(_core));
+        coreContract = ChainmonstersCoreV2(_core);
+        core = _core;
     }
 
     // _id here is NOT the final tokenID and instead an internal identifier
@@ -121,33 +96,32 @@ contract GameLogic {
     // this method does not require the actual owner to call this
     // which enables us to do promo minting for players during special events
     // and also other players to gift each other a caught monster ;)
-    function requestMintToken(uint256 _id) payable public {
+    function requestMintToken(uint256 _id) payable external {
         require(tokenToMinted[_id] == 0);
         require(msg.value >= mintFee);
         backend.transfer(gasCosts);
         tokenToMinted[_id] = 1;
 
-        RequestMint(msg.sender, _id);
+        emit RequestMint(msg.sender, _id, mintFee, gasCosts);
 
 
     }
 
     // mint method called by server
     // the gasFee sent by the player makes sure that the system runs without further user interaction required
-    // minted tokens are Gen-1 as specified in coreContract.SpawnMonster method
-    function mintToken(uint256 _id, uint256 _mid, address _owner) public {
+    function mintToken(uint256 _id, address _owner) external {
         require(msg.sender == backend);
         require(tokenToMinted[_id] == 1);
-        require(_mid >= 1 && _mid <= 151);
+       
 
         
 
         // start off with blocking any attemps of creating any duplicates
         tokenToMinted[_id] = 2;
 
-        coreContract.SpawnMonster(_mid, _owner);
+        coreContract.mintToken(_owner);
 
-        MintToken(_id, _owner);
+        emit MintToken(_id, _owner);
 
     }
 
@@ -155,10 +129,11 @@ contract GameLogic {
     {
         require(msg.sender == owner);
 
-        // there is never more balancee on this contract than the sum if the mintFee
+        // there is never more balancee on this contract than the sum of the mintFee
         // since gas costs are handled during each new request automatically
-        uint256 balance = this.balance;
-        owner.transfer(balance);
+        uint256 balance = address(this).balance;
+        address payable _owner = address(uint160(owner));
+        _owner.transfer(balance);
     }
 
 }
