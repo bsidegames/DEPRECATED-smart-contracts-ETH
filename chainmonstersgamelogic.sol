@@ -98,7 +98,7 @@ contract GameLogic {
     // and also other players to gift each other a caught monster ;)
     function requestMintToken(uint256 _id) payable external {
         require(tokenToMinted[_id] == 0);
-        require(msg.value >= mintFee);
+        require(msg.value == mintFee);
         backend.transfer(gasCosts);
         tokenToMinted[_id] = 1;
 
